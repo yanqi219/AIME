@@ -5,9 +5,9 @@ library(mixOmics)
 
 ##pre-process metabolic data
 
-class <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
-feature <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
-outloc <-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA_residual"
+class <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
+feature <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
+outloc <-"C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA_residual"
 
 # ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
 #                                       summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0.5,group.missing.thresh=0.8,
@@ -22,7 +22,7 @@ feature <- as.data.frame(ready_for_regression$data_matrix_afternorm_scaling)
 na_count <-sapply(feature, function(y) sum(is.na(y)))
 summary(na_count)
 
-setwd("C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
+setwd("C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
 load(file = "HILIC_class.rda")
 
 # setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
@@ -82,7 +82,7 @@ feature_w_cov <- merge(sampleID,long_save_feature, by = "SampleID")
 
 # adjust for covariates on each metabolits and then get residuals
 fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(birthyear)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
-                    lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn), na.action = na.exclude)
+                    as.factor(maternal_edu)+lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm), na.action = na.exclude)
 residual_feature <- as.matrix(residuals(fit_feature),nrow = dim(feature_w_cov)[1],ncol = dim(save_feature)[1])
 save_residual <- as.data.frame(residual_feature)
 save_residual <- cbind(long_save_feature$SampleID,save_residual)
@@ -147,3 +147,36 @@ ordered_sampleID <- inner_join(class,sampleID,by=c("SampleID","factorcase"))
 
 setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
 write.table(ordered_sampleID,file="HILIC_withcov_classlabels_control_expo_unexpo.txt",sep = "\t",row.names = F,quote = F)
+
+####################################################### Check covariates ########################################################
+
+## Distribution of covariates
+count(feature_w_cov,var = c("factorcase","sex"))
+count(feature_w_cov,var = c("factorcase","maternal_age"))
+count(feature_w_cov,var = c("factorcase","maternal_raceeth"))
+count(feature_w_cov,var = c("factorcase","maternal_edu"))
+count(feature_w_cov,var = c("factorcase","preterm"))
+count(feature_w_cov,var = c("factorcase","usborn"))
+
+## Exposure status ~ cov
+regression_data <- feature_w_cov
+regression_data$factorcase <- ifelse(regression_data$factorcase=='Exposed',1,ifelse(regression_data$factorcase=='Unexposed',2,99))
+regression_data$factorcase <- as.factor(regression_data$factorcase)
+expo_cov_logit <- glm(factorcase ~ as.factor(sex)+as.factor(birthyear)+as.factor(maternal_age)+as.factor(maternal_raceeth)+as.factor(maternal_edu)+
+                        lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn),data=regression_data,family=binomial())
+summary(expo_cov_logit) # birthyear, maternal race, maternal edu, pregcompl, ttcbl significant
+
+## Metabolites ~ exposure + cov
+fit <- lm(data = regression_data, met_1 ~ as.factor(factorcase)+as.factor(sex)+as.factor(birthyear)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
+            lengthgestation+as.factor(maternal_edu)+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn), na.action = na.exclude)
+summary(fit) # maternal edu significant
+p_value <- save_link
+p_value$p <- NA
+for (i in 13:ncol(regression_data)){
+met_expo_lm <- lm(data = regression_data, regression_data[,i] ~ as.factor(factorcase)+as.factor(sex)+as.factor(birthyear)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
+                    lengthgestation+as.factor(maternal_edu)+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn), na.action = na.exclude)
+p_value[i-12,4]<-summary(met_expo_lm)$coefficients[2,4]
+}
+p_value <- p_value[order(p_value$p),]
+p_value$Bonferroni <- p.adjust(p_value$p, method = "bonferroni")
+p_value$BH <- p.adjust(p_value$p, method = "BH")
