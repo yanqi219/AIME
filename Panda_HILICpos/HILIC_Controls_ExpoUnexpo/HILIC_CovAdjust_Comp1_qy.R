@@ -5,9 +5,9 @@ library(mixOmics)
 
 ##pre-process metabolic data
 
-class <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
-feature <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
-outloc <-"C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA_residual"
+class <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
+feature <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
+outloc <-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA_residual"
 
 # ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
 #                                       summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0.5,group.missing.thresh=0.8,
@@ -22,7 +22,7 @@ feature <- as.data.frame(ready_for_regression$data_matrix_afternorm_scaling)
 na_count <-sapply(feature, function(y) sum(is.na(y)))
 summary(na_count)
 
-setwd("C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
+setwd("C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
 load(file = "HILIC_class.rda")
 
 # setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
@@ -53,8 +53,8 @@ sampleID$V4 <- paste(sampleID$SampleID,sampleID$V3,sep = "")
 
 sampleID <- subset(sampleID,select=-c(V3,SampleID))
 
-sampleID <- rename(sampleID,c('V4'='SampleID'))
-sampleID <- rename(sampleID,c('Exposure_category..Factor2.'='factorcase'))
+sampleID <- plyr::rename(sampleID,c('V4'='SampleID'))
+sampleID <- plyr::rename(sampleID,c('Exposure_category..Factor2.'='factorcase'))
 colnames(sampleID)
 sampleID <- sampleID[c("SampleID","factorcase","sex","birthyear","maternal_age","maternal_raceeth","maternal_edu"
                        ,"lengthgestation","pregcompl","ttcbl","preterm","usborn")]
@@ -74,29 +74,33 @@ long_save_feature <- as.data.frame(t(save_feature[,-1]))
 colnames(long_save_feature) <- n
 id <- row.names(long_save_feature)
 long_save_feature <- cbind(id,long_save_feature)
-long_save_feature <- rename(long_save_feature,c('id'='SampleID'))
+long_save_feature <- plyr::rename(long_save_feature,c('id'='SampleID'))
 row.names(long_save_feature) <- c(1:nrow(long_save_feature))
 
 # merge covariates data wirh feature data
 feature_w_cov <- merge(sampleID,long_save_feature, by = "SampleID")
 
 # adjust for covariates on each metabolits and then get residuals
-fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(birthyear)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
-                    as.factor(maternal_edu)+lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm), na.action = na.exclude)
+# fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex), na.action = na.exclude) # residual_1
+# fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_edu), na.action = na.exclude) # residual_2
+# fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_edu)+as.factor(pregcompl)
+#                   +ttcbl+as.factor(maternal_raceeth), na.action = na.exclude) # residual_3
+fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
+                    as.factor(maternal_edu)+lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn), na.action = na.exclude)
 residual_feature <- as.matrix(residuals(fit_feature),nrow = dim(feature_w_cov)[1],ncol = dim(save_feature)[1])
 save_residual <- as.data.frame(residual_feature)
-save_residual <- cbind(long_save_feature$SampleID,save_residual)
-save_residual <- save_residual[order(save_residual$`long_save_feature$SampleID`),]
+save_residual <- cbind(feature_w_cov$SampleID,save_residual)
+save_residual <- save_residual[order(save_residual$`feature_w_cov$SampleID`),]
 row.names(save_residual) <- c(1:nrow(save_residual))
 
 # reformat residual from long to wide
-n <- save_residual$`long_save_feature$SampleID`
+n <- save_residual$`feature_w_cov$SampleID`
 
 wide_save_residual <- as.data.frame(t(save_residual[,-1]))
 colnames(wide_save_residual) <- n
 id <- row.names(wide_save_residual)
 wide_save_residual <- cbind(id,wide_save_residual)
-wide_save_residual <- rename(wide_save_residual,c('id'='metablite'))
+names(wide_save_residual)[names(wide_save_residual) == 'id'] <- 'metablite'
 row.names(wide_save_residual) <- c(1:nrow(wide_save_residual))
 
 # link wide_save_residual with save_link, retrive m/z and time back
@@ -135,8 +139,8 @@ sampleID$V4 <- paste(sampleID$SampleID,sampleID$V3,sep = "")
 
 sampleID <- subset(sampleID,select=-c(V3,SampleID))
 
-sampleID <- rename(sampleID,c('V4'='SampleID'))
-sampleID <- rename(sampleID,c('Exposure_category..Factor2.'='factorcase'))
+sampleID <- plyr::rename(sampleID,c('V4'='SampleID'))
+sampleID <- plyr::rename(sampleID,c('Exposure_category..Factor2.'='factorcase'))
 colnames(sampleID)
 sampleID <- sampleID[c("SampleID","factorcase","sex","birthyear","maternal_age","maternal_raceeth","maternal_edu"
                        ,"lengthgestation","pregcompl","ttcbl","preterm","usborn")]
