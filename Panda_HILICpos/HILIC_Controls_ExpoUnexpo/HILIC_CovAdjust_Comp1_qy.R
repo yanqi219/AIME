@@ -5,9 +5,9 @@ library(mixOmics)
 
 ##pre-process metabolic data
 
-class <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
-feature <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
-outloc <-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA_residual"
+class <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
+feature <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
+outloc <-"C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA_residual"
 
 # ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
 #                                       summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0.5,group.missing.thresh=0.8,
@@ -15,14 +15,14 @@ outloc <-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/P
 #                                       samplermindex=NA,rep.max.missing.thresh=0.5,summary.na.replacement="zeros",featselmethod=NA)
 ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
                                       summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0.5,group.missing.thresh=0.8,
-                                      log2transform=FALSE,medcenter=FALSE,znormtransform=FALSE,quantile_norm=FALSE,lowess_norm=FALSE,madscaling=FALSE,missing.val=0,
+                                      log2transform=TRUE,medcenter=FALSE,znormtransform=FALSE,quantile_norm=TRUE,lowess_norm=FALSE,madscaling=FALSE,missing.val=0,
                                       samplermindex=NA,rep.max.missing.thresh=0.5,summary.na.replacement="halfdatamin",featselmethod=NA)
 
 feature <- as.data.frame(ready_for_regression$data_matrix_afternorm_scaling)
 na_count <-sapply(feature, function(y) sum(is.na(y)))
 summary(na_count)
 
-setwd("C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
+setwd("C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
 load(file = "HILIC_class.rda")
 
 # setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
@@ -83,10 +83,10 @@ feature_w_cov <- merge(sampleID,long_save_feature, by = "SampleID")
 # adjust for covariates on each metabolits and then get residuals
 # fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex), na.action = na.exclude) # residual_1
 # fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_edu), na.action = na.exclude) # residual_2
-# fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_edu)+as.factor(pregcompl)
-#                   +ttcbl+as.factor(maternal_raceeth), na.action = na.exclude) # residual_3
-fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
-                    as.factor(maternal_edu)+lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn), na.action = na.exclude)
+fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_edu)+as.factor(pregcompl)
+                 +ttcbl+as.factor(maternal_raceeth), na.action = na.exclude) # residual_3
+# fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
+#                     as.factor(maternal_edu)+lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn), na.action = na.exclude)
 residual_feature <- as.matrix(residuals(fit_feature),nrow = dim(feature_w_cov)[1],ncol = dim(save_feature)[1])
 save_residual <- as.data.frame(residual_feature)
 save_residual <- cbind(feature_w_cov$SampleID,save_residual)
@@ -109,8 +109,12 @@ wide_save_residual <- wide_save_residual[,-1]
 wide_save_residual <- wide_save_residual[order(wide_save_residual$mz,wide_save_residual$time),]
 row.names(wide_save_residual) <- c(1:nrow(wide_save_residual))
 
+# replace na with 0
+wide_save_residual<-replace(wide_save_residual,is.na(wide_save_residual),0)
+
 ##save data file
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
+setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
+save(sampleID, wide_save_residual, file = "HILIC_control_expo_unexpo_residual_WGCNA.RData") ## for WGCNA
 save_sampleID <- sampleID[,c(1:2)]
 write.table(save_sampleID,file="HILIC_residuals_classlabels_control_expo_unexpo.txt",sep = "\t",row.names = F,quote = F)
 write.table(wide_save_residual,file="HILIC_residuals_control_expo_unexpo.txt",sep = "\t",row.names = F,quote = F)
@@ -145,7 +149,7 @@ colnames(sampleID)
 sampleID <- sampleID[c("SampleID","factorcase","sex","birthyear","maternal_age","maternal_raceeth","maternal_edu"
                        ,"lengthgestation","pregcompl","ttcbl","preterm","usborn")]
 
-class <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
+class <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_classlabels_control_expo_unexpo.txt"
 class <- read.table(class,sep="\t",header=TRUE)
 ordered_sampleID <- inner_join(class,sampleID,by=c("SampleID","factorcase"))
 
