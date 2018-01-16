@@ -35,8 +35,8 @@ if(comp.mode == "Control_ExpoUnexpo"){
   
 }
 
-class <- paste(dir.folder,paste("PANDA_input/classlabels",filename.ins,".txt",sep = ""),sep = "")
-feature <- paste(dir.folder,paste("PANDA_input/ftrsmzcalib_combat_ordered",filename.ins,".txt",sep = ""),sep = "")
+class <- paste(dir.folder,paste("PANDA_input/HILIC_classlabels",filename.ins,".txt",sep = ""),sep = "")
+feature <- paste(dir.folder,paste("PANDA_input/HILIC_ftrsmzcalib_combat_ordered",filename.ins,".txt",sep = ""),sep = "")
 outloc <- paste(dir.folder,"PANDA_output_PLSDA",sep = "")
 
 # ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
