@@ -21,7 +21,7 @@ pred.eval.method = "CV"
 cluster.method = "dist" #"dist" or "bicor" #Residual can only use "dist"
 cpu = 4
 
-dir.folder <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/"
+dir.folder <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/"
 
 #################################
 # Start!
@@ -74,7 +74,7 @@ if(is.residual == FALSE){
   rm(after.prepro.feature)
   rm(after.prepro.linkid)
 }else{
-  load(file = "HILIC_case_control_noexposure_residual_WGCNA.RData")
+  load(file = "HILIC_case_control_noexposure_residual3_WGCNA.RData")
   
   row.names(wide_save_residual) <- c(paste("met_",1:nrow(wide_save_residual),sep = ""))
   linkid <- wide_save_residual[,1:2]
@@ -396,9 +396,9 @@ save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[,c(1,2,4,3)]
 ###################################################
 
 #PLSDA_vip2
-annotations_filename<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
-annotations_filename_2<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_HMDB.txt"
-annotations_filename_3<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_LipidMaps.txt"
+annotations_filename<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
+annotations_filename_2<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_HMDB.txt"
+annotations_filename_3<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_LipidMaps.txt"
 
 number_significant_digits_rounding<-4
 
@@ -468,6 +468,63 @@ print(time.run)
 
 dev.off()
 sink()
+
+###################################################
+### VI. Create box plots
+###################################################
+library(xlsx)
+
+load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_residual3_WGCNA.RData")
+load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-22.RData")
+wide_save_residual$mz <- round(wide_save_residual$mz,4)
+
+annotations_filename<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
+a_KEGG<-read.table(annotations_filename,sep="\t",header=TRUE)
+
+setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichog_0113/Res_HILIC_PLSDAvip2_model4/tsv")
+mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_PLSDAvip2.xlsx",sheetName = "Sheet1")
+mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_PLSDAvip2.xlsx",sheetName = "_tentative_featurematch_")
+
+mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.05),])
+mummichog.metabID <- {}
+mummichog.metabID <- strsplit(as.character(mummichog.sig.pathway$overlap_features..id.),";")
+
+# Begin box plot
+for(i in 1:nrow(mummichog.sig.pathway)){
+  pathway.name <- as.character(mummichog.sig.pathway[i,1])
+  print(pathway.name)     # Obtain the name of pathways
+  
+  setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Pathway Box Plots")
+  pdf_file<-paste(pathway.name,".pdf",sep="")
+  pdf(file = pdf_file,width=10,height=10)
+  
+  for(j in 1:length(mummichog.metabID[[i]])){
+    # par(mfrow=c(2,1))
+    metab.mz <- mummichog.MatchMetab[which(as.character(mummichog.MatchMetab$id)==mummichog.metabID[[i]][j]),]
+    metab.name <- as.character(metab.mz[which(as.character(metab.mz$match_form) == "M+H[1+]"),5])   # Obtain the name of metablites
+    metab.mz <- metab.mz[which(as.character(metab.mz$match_form) == "M+H[1+]"),1]    # Obtain the mz of metablites
+    if(length(metab.name)==0){
+      next}
+    # metab.time <- a_KEGG[which(a_KEGG$KEGGID==metab.id),2]
+    metab.expr <- wide_save_residual[which(wide_save_residual$mz==metab.mz),]    # link mz with residual data, get the residual record of that metablite
+    for(k in 1:nrow(metab.expr)){                                           # For each metablite, it can be linked with multiple records
+      box.mz <- metab.expr[k,1]
+      box.time <- metab.expr[k,2]
+      
+      box.expr <- t(metab.expr[k,-c(1,2)])
+      box.expr <- as.data.frame(cbind(box.expr,sampleID$factorcase))
+      colnames(box.expr) <- c("Intensity","Group")
+      box.expr$Intensity <- as.numeric(as.character(box.expr$Intensity))
+      box.expr$Group <- as.factor(box.expr[,2])
+      
+      title <- paste("pathway: ",pathway.name,"metab: ",metab.name,"mz:",box.mz,"time:",box.time,sep = " ")
+      
+      boxplot(Intensity~Group,data = box.expr,outline = FALSE,main=title)
+    }
+  }
+  dev.off()
+}
+dev.off()
 
 # ###################################################
 # ### code chunk number 11: PLSDA-analysis.Rnw:267-285 (eval = FALSE)

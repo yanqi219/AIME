@@ -60,7 +60,7 @@ after.prepro.feature <- after.prepro.feature[order(row.names(after.prepro.featur
 setwd("C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
 load(file = "HILIC_class.rda")
 
-# setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
+# setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
 # feature <- read.table("HILIC_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt",sep="\t",header=TRUE)
 
 ##extract covariates
@@ -155,7 +155,7 @@ feature_w_cov <- merge(sampleID,long_save_feature, by = "SampleID")
 # adjust for covariates on each metabolits and then get residuals
 # fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex), na.action = na.exclude) # residual_1
 # fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_edu), na.action = na.exclude) # residual_2
-fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_edu)+as.factor(pregcompl)
+fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_age)+as.factor(maternal_edu)+as.factor(pregcompl)
                  +ttcbl+as.factor(maternal_raceeth), na.action = na.exclude) # residual_3
 # fit_feature <- lm(data = feature_w_cov, as.matrix(feature_w_cov[,13:ncol(feature_w_cov)]) ~ as.factor(sex)+as.factor(maternal_age)+as.factor(maternal_raceeth)+
 #                     as.factor(maternal_edu)+lengthgestation+as.factor(pregcompl)+ttcbl+as.factor(preterm)+as.factor(usborn), na.action = na.exclude)
@@ -181,14 +181,19 @@ wide_save_residual <- wide_save_residual[,-1]
 wide_save_residual <- wide_save_residual[order(wide_save_residual$mz,wide_save_residual$time),]
 row.names(wide_save_residual) <- c(1:nrow(wide_save_residual))
 
-# replace na with 0
-wide_save_residual<-replace(wide_save_residual,is.na(wide_save_residual),0)
+# # replace na with 0
+# wide_save_residual<-replace(wide_save_residual,is.na(wide_save_residual),0)
+
+# remove na
+wide_save_residual<-wide_save_residual[sapply(wide_save_residual, function(x) !any(is.na(x)))]
+complete_sub <- row.names(t(wide_save_residual[,-c(1:2)]))
+sampleID <- subset(sampleID, sampleID$SampleID %in% complete_sub)
 
 ##save data file
 dir.file <- paste(dir.folder,"PANDA_input",sep = "")
 setwd(dir.file)
 
-save(sampleID, wide_save_residual, file = paste("HILIC",filename.ins,"_residual_WGCNA.RData",sep = "")) ## for WGCNA
+save(sampleID, wide_save_residual, file = paste("HILIC",filename.ins,"_residual3_WGCNA.RData",sep = "")) ## for WGCNA
 save_sampleID <- sampleID[,c(1:2)]
 
 write.table(save_sampleID,file = paste("HILIC_residuals_classlabels",filename.ins,".txt",sep = ""),sep = "\t",row.names = F,quote = F)
@@ -230,7 +235,7 @@ save(sampleID, after.prepro.feature,after.prepro.linkid, file = paste("HILIC",fi
 # ordered_sampleID <- inner_join(class,sampleID,by=c("SampleID","factorcase"))
 # 
 # 
-# setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
+# setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
 # write.table(ordered_sampleID,file="HILIC_withcov_classlabels_control_expo_unexpo.txt",sep = "\t",row.names = F,quote = F)
 
 ####################################################### Check covariates ########################################################
