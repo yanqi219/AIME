@@ -1,6 +1,6 @@
 get_roc <-
 function(dataA,classlabels,classifier="svm",kname="radial",rocfeatlist=seq(2,10,1),rocfeatincrement=TRUE,testset=NA,testclasslabels=NA,mainlabel=NA){
-
+  
     d1<-dataA
     rm(dataA)
     
@@ -27,6 +27,7 @@ function(dataA,classlabels,classifier="svm",kname="radial",rocfeatlist=seq(2,10,
     d3<-as.data.frame(d3)
     
     d3$classlabels <- as.factor(d3$classlabels)
+    levels(d3$classlabels) <- c("control","case")
     
     colnames(d3)[1] <- "class"
     
@@ -65,11 +66,12 @@ function(dataA,classlabels,classifier="svm",kname="radial",rocfeatlist=seq(2,10,
                 
                 mainlab=mainlabel
             }
-
-            model1 <- svm(class~., data=d3[,c(1:num_select)], type="C",probability=TRUE,kernel=kname)
+            train <- d3[order(d3$class, decreasing = TRUE),c(1:num_select,num_select+1)]
+            model1 <- svm(class~., data=train, type="C",probability=TRUE,kernel=kname)
                 
                 
             pred<-predict(model1,testset,probability=TRUE,decision.values=TRUE,type="prob")
+            table(pred,testclasslabels)
             pred1 <- prediction(attributes(pred)$probabilities[,2], testclasslabels)
             
             stats1a <- performance(pred1, 'tpr', 'fpr')
