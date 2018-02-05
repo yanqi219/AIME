@@ -474,57 +474,123 @@ sink()
 ###################################################
 library(xlsx)
 
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_residual3_WGCNA.RData")
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-22.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_residual3_WGCNA.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-22.RData")
 wide_save_residual$mz <- round(wide_save_residual$mz,4)
+save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
 
-annotations_filename<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
+annotations_filename<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
 a_KEGG<-read.table(annotations_filename,sep="\t",header=TRUE)
 
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichog_0113/Res_HILIC_PLSDAvip2_model4/tsv")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichog_0113/Res_HILIC_PLSDAvip2_model4/tsv")
 mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_PLSDAvip2.xlsx",sheetName = "Sheet1")
 mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_PLSDAvip2.xlsx",sheetName = "_tentative_featurematch_")
 
 mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.05),])
 mummichog.metabID <- {}
 mummichog.metabID <- strsplit(as.character(mummichog.sig.pathway$overlap_features..id.),";")
+mummichog.metabmz <- {}
+mummichog.metabmz <- strsplit(as.character(mummichog.sig.pathway$used_input_mzs),";")
 
 # Begin box plot
 for(i in 1:nrow(mummichog.sig.pathway)){
   pathway.name <- as.character(mummichog.sig.pathway[i,1])
   print(pathway.name)     # Obtain the name of pathways
   
-  setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Pathway Box Plots")
+  setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Pathway Box Plots")
   pdf_file<-paste(pathway.name,".pdf",sep="")
   pdf(file = pdf_file,width=10,height=10)
   
   for(j in 1:length(mummichog.metabID[[i]])){
     # par(mfrow=c(2,1))
-    metab.mz <- mummichog.MatchMetab[which(as.character(mummichog.MatchMetab$id)==mummichog.metabID[[i]][j]),]
-    metab.name <- as.character(metab.mz[which(as.character(metab.mz$match_form) == "M+H[1+]"),5])   # Obtain the name of metablites
-    metab.mz <- metab.mz[which(as.character(metab.mz$match_form) == "M+H[1+]"),1]    # Obtain the mz of metablites
+    metab.mz <- mummichog.metabmz[[i]][j]
+    metab.mz <- as.vector(strsplit(as.character(metab.mz),","))[[1]]
+    metab.mz <- as.numeric(metab.mz)
+    metab.name <- mummichog.MatchMetab[which(as.character(mummichog.MatchMetab$id)==mummichog.metabID[[i]][j]),]
+    metab.name <- as.character(metab.name[1,5])
     if(length(metab.name)==0){
       next}
     # metab.time <- a_KEGG[which(a_KEGG$KEGGID==metab.id),2]
-    metab.expr <- wide_save_residual[which(wide_save_residual$mz==metab.mz),]    # link mz with residual data, get the residual record of that metablite
-    for(k in 1:nrow(metab.expr)){                                           # For each metablite, it can be linked with multiple records
-      box.mz <- metab.expr[k,1]
-      box.time <- metab.expr[k,2]
-      
-      box.expr <- t(metab.expr[k,-c(1,2)])
-      box.expr <- as.data.frame(cbind(box.expr,sampleID$factorcase))
-      colnames(box.expr) <- c("Intensity","Group")
-      box.expr$Intensity <- as.numeric(as.character(box.expr$Intensity))
-      box.expr$Group <- as.factor(box.expr[,2])
-      
-      title <- paste("pathway: ",pathway.name,"metab: ",metab.name,"mz:",box.mz,"time:",box.time,sep = " ")
-      
-      boxplot(Intensity~Group,data = box.expr,outline = FALSE,main=title)
+    for(l in 1:length(metab.mz)){
+      matchmz <- metab.mz[l]
+      metab.expr <- save.plsresults.sigfeatures[which(save.plsresults.sigfeatures$mz==matchmz),-c(3:6)]    # link mz with residual data, get the residual record of that metablite
+      if(nrow(metab.expr)==0){
+        metab.expr <- wide_save_residual[which(wide_save_residual$mz==matchmz),-c(3:6)]
+      }
+      for(k in 1:nrow(metab.expr)){                                           # For each metablite, it can be linked with multiple records
+        box.mz <- metab.expr[k,1]
+        box.time <- metab.expr[k,2]
+        
+        box.expr <- t(metab.expr[k,-c(1,2)])
+        box.expr <- as.data.frame(cbind(box.expr,sampleID$factorcase))
+        colnames(box.expr) <- c("Intensity","Group")
+        box.expr$Intensity <- as.numeric(as.character(box.expr$Intensity))
+        box.expr$Group <- as.factor(box.expr[,2])
+        title <- paste("metab: ",metab.name,"mz:",box.mz,"time:",box.time,sep = " ")
+        boxplot(Intensity~Group,data = box.expr,outline = FALSE,main=title)
+      }
     }
   }
   dev.off()
 }
-dev.off()
+
+###################################################
+### VII. Re-annotate significant features with loose adducts
+###################################################
+library(xMSannotator)
+
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_residual3_WGCNA.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-22.RData")
+
+data(adduct_table)
+data(adduct_weights)
+
+###########Parameters to change##############
+#dataA<-read.table("/Users/Projects/xMSannotator/test_data.txt",sep="\t",header=TRUE)
+input_data <- save.plsresults.sigfeatures[,-c(3:6)]
+dataA<-input_data
+
+outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_Annotation/sigfeature_annotation"
+
+max.mz.diff<-10  #mass search tolerance for DB matching in ppm
+max.rt.diff<-10 #retention time tolerance between adducts/isotopes
+corthresh<-0.7 #correlation threshold between adducts/isotopes
+max_isp=5 #maximum number of isotopes to search for
+mass_defect_window=0.01 #mass defect window for isotope search
+
+num_nodes<-2   #number of cores to be used; 2 is recommended for desktop computers due to high memory consumption
+
+db_name="KEGG" #other options: HMDB,Custom,KEGG, LipidMaps, T3DB
+status="Detected and Quantified" #other options: "Detected", NA, "Detected and Quantified", "Expected and Not Quantified"
+num_sets<-300 #number of sets into which the total number of database entries should be split into;
+
+mode<-"pos" #ionization mode
+# queryadductlist=c("M+H","M+2H","M+H+NH4","M+ACN+2H","M+2ACN+2H","M+NH4","M+Na","M+ACN+H","M+ACN+Na","M+2ACN+H","2M+H","2M+Na","2M+ACN+H","M+2Na-H","M+H-H2O","M+H-2H2O") #other options: c("M-H","M-H2O-H","M+Na-2H","M+Cl","M+FA-H"); c("positive"); c("negative"); c("all");see data(adduct_table) for complete list
+queryadductlist=c("all")
+
+#provide list of database IDs (depending upon selected database) for annotating only specific metabolites
+customIDs<-NA #c("HMDB15352","HMDB60549","HMDB00159","HMDB00222"); read.csv("/Users/mzmatch_95stdmx_HMDBIDs.csv")
+customDB<-NA 
+
+#########################
+
+dataA<-unique(dataA)
+print(dim(dataA))
+print(format(Sys.time(), "%a %b %d %X %Y"))
+
+system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,max.rt.diff=max.rt.diff,cormethod="pearson",num_nodes=num_nodes,queryadductlist=queryadductlist,
+                                           mode=mode,outloc=outloc,db_name=db_name, adduct_weights=adduct_weights,num_sets=num_sets,allsteps=TRUE,
+                                           corthresh=corthresh,NOPS_check=TRUE,customIDs=customIDs,missing.value=NA,deepsplit=2,networktype="unsigned",
+                                           minclustsize=10,module.merge.dissimilarity=0.2,filter.by=c("M+H"),biofluid.location=NA,origin=NA,status=status,boostIDs=NA,max_isp=max_isp,
+                                           customDB=customDB,
+                                           HMDBselect="union",mass_defect_window=mass_defect_window,pathwaycheckmode="pm",mass_defect_mode="pos")
+)
+
+
+print(format(Sys.time(), "%a %b %d %X %Y"))
+
+pkg <- "package:xMSannotator"
+detach(pkg, character.only = TRUE)
 
 # ###################################################
 # ### code chunk number 11: PLSDA-analysis.Rnw:267-285 (eval = FALSE)
