@@ -6,7 +6,7 @@ options(stringsAsFactors = FALSE)
 
 setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
 # setwd("/u/home/q/qyan/AIME/HILIC_WGCNA_Comp1")
-load(file = "HILIC_control_expo_unexpo_residual_WGCNA.RData")
+load(file = "HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
 
 datTraits <- sampleID[,-1]
 rownames(datTraits) <- sampleID$SampleID
@@ -23,7 +23,7 @@ colnames(datExpr) <- wide_save_residual$met
 
 ## choose power for soft-threshold
 ## Choose a set of soft-thresholding powers
-powers = c(c(1:10), seq(from = 12, to=20, by=2))
+powers = c(c(1:10), seq(from = 12, to=30, by=2))
 ## Call the network topology analysis function
 sft = pickSoftThreshold(datExpr, powerVector = powers, verbose = 5)
 ## Plot the results:
@@ -48,7 +48,7 @@ text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 # Part II: Run WGCNA
 ###################################
 
-net = blockwiseModules(datExpr, power = 2,
+net = blockwiseModules(datExpr, power = 12,
                        corType = "bicor",
                        maxBlockSize =5000,
                        networkType = "signed",
@@ -93,8 +93,9 @@ cor_trait <- as.data.frame(datTraits$factorcase)
 row.names(cor_trait) <- row.names(datTraits)                 ## Define the target trait (factorcase)
 colnames(cor_trait) <- "factorcase"
 cor_trait$factorcase[cor_trait$factorcase=="Exposed"] <- 1   ## recode to numeric
-cor_trait$factorcase[cor_trait$factorcase=="Unexposed"] <- 0
-moduleTraitCor = cor(MEs, cor_trait, use = "p");
+cor_trait$factorcase[cor_trait$factorcase=="Unexposed"] <- 2
+moduleTraitCor = bicor(MEs, cor_trait, maxPOutliers = 0.05, robustY = FALSE);
+# moduleTraitCor = cor(MEs, cor_trait, use = "p");
 moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples);
 
 sizeGrWindow(10,6)
@@ -123,13 +124,13 @@ save(moduleTraitCor, moduleTraitPvalue, file = "HILIC_WGCNA_ModuleTrait_corr.RDa
 ## names (colors) of the modules
 modNames = substring(names(MEs), 3)
 
-geneModuleMembership = as.data.frame(cor(datExpr, MEs, use = "p"));
+geneModuleMembership = as.data.frame(bicor(datExpr, MEs, maxPOutliers = 0.05));
 MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
 
 names(geneModuleMembership) = paste("MM", modNames, sep="");
 names(MMPvalue) = paste("p.MM", modNames, sep="");
 
-geneTraitSignificance = as.data.frame(cor(datExpr, cor_trait, use = "p"));
+geneTraitSignificance = as.data.frame(bicor(datExpr, cor_trait, maxPOutliers = 0.05, robustY = FALSE));
 GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSamples));
 
 names(geneTraitSignificance) = paste("GS.", names(cor_trait), sep="");
@@ -150,4 +151,17 @@ verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
                    cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
 
 save(geneModuleMembership, MMPvalue, geneTraitSignificance, GSPvalue, file = "HILIC_WGCNA_MMGS.RData")
+
+###################################
+# Part IV: Conduct bircor between features and traits
+###################################
+
+y <- as.vector(cor_trait$factorcase)
+x <- as.matrix(datExpr)
+output <- standardScreeningBinaryTrait(x, y, 
+                             corFnc = bicor, 
+                             corOptions = list(use = 'p',robustY=F),
+                             kruskalTest = FALSE, qValues = TRUE, var.equal=FALSE, 
+                             na.action="na.exclude", getAreaUnderROC = TRUE)
+output <- output[order(output$pvalueStudent.1.vs.2),]
 
