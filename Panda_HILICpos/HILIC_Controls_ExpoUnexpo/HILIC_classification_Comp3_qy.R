@@ -12,8 +12,8 @@ is.residual = TRUE
 
 optimal_comp = FALSE
 components = 5
-vip_threshold = 2
-foldchange_threshold = 0.58
+vip_threshold = 2.5
+foldchange_threshold = 0
 is.log = TRUE
 fold_cv = 10
 nrepeat = 50
@@ -34,11 +34,11 @@ dir.temp <- paste(dir.folder,"PANDA_output_PLSDA",sep = "")
 setwd(dir.temp)
 
 if(is.residual == TRUE){
-  logfile <- paste("Res_Log_",Sys.Date(),".log",sep = "")
-  pdf_file<-paste("Res_Output_",Sys.Date(),".pdf",sep="")
+  logfile <- paste("Res_Log_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".log",sep = "")
+  pdf_file<-paste("Res_Output_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".pdf",sep="")
 }else{
-  logfile <- paste("Log_",Sys.Date(),".log",sep = "")
-  pdf_file<-paste("Output_",Sys.Date(),".pdf",sep="")
+  logfile <- paste("Log_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".log",sep = "")
+  pdf_file<-paste("Output_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".pdf",sep="")
 }
 
 logfile <- file(logfile)
@@ -55,7 +55,7 @@ dir.temp <- paste(dir.folder,"PANDA_input",sep = "")
 setwd(dir.temp)
 
 if(is.residual == FALSE){
-  load(file = "HILIC_case_control_noexposure_classification.RData")
+  load(file = "HILIC_case_control_noexposure_classification_nonorm.RData")
   
   X <- after.prepro.feature
   linkid <- after.prepro.linkid
@@ -74,7 +74,7 @@ if(is.residual == FALSE){
   rm(after.prepro.feature)
   rm(after.prepro.linkid)
 }else{
-  load(file = "HILIC_case_control_noexposure_residual3_WGCNA.RData")
+  load(file = "HILIC_case_control_noexposure_residual_nonorm_WGCNA.RData")
   
   row.names(wide_save_residual) <- c(paste("met_",1:nrow(wide_save_residual),sep = ""))
   linkid <- wide_save_residual[,1:2]
@@ -385,11 +385,11 @@ print(paste("Number of significant features:",nrow(save.plsresults.sigfeatures),
 ### III. Prepare for mummichog
 ###################################################
 
-save.mummichog_PLSDA_VIP2 <- save.plsresults.allfeatures[,1:3]
+save.mummichog_PLSDA_VIP2 <- save.plsresults.allfeatures[,1:4]
 save.mummichog_PLSDA_VIP2$"p-value" = 0.051
-save.mummichog_PLSDA_VIP2$`p-value`[save.mummichog_PLSDA_VIP2$vip>=2] <- 0.004
+save.mummichog_PLSDA_VIP2$`p-value`[save.mummichog_PLSDA_VIP2$vip>=vip_threshold&abs(save.mummichog_PLSDA_VIP2$foldchange)>=foldchange_threshold] <- 0.004
 save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[order(save.mummichog_PLSDA_VIP2$`p-value`,-save.mummichog_PLSDA_VIP2$vip),]
-save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[,c(1,2,4,3)]
+save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[,c(1,2,5,4)]
 
 ###################################################
 ### IV. Annotation
@@ -453,9 +453,9 @@ dir.temp <- paste(dir.folder,"PANDA_output_PLSDA",sep = "")
 setwd(dir.temp)
 
 if(is.residual == TRUE){
-  filename <- paste("Res_PLSDA_result_",Sys.Date(),".RData",sep="")
+  filename <- paste("Res_PLSDA_result_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".RData",sep="")
 }else{
-  filename <- paste("PLSDA_result_",Sys.Date(),".RData",sep="")
+  filename <- paste("PLSDA_result_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".RData",sep="")
 }
 save(save.cv.accuracy,save.HMDB,save.KEGG,save.LipidMaps,save.mummichog_PLSDA_VIP2,save.plsresults.allfeatures,
      save.plsresults.sigfeatures,file = filename)
@@ -469,18 +469,116 @@ print(time.run)
 dev.off()
 sink()
 
+# Create mummichog files
+
+load(filename)
+mummichog_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichog_input","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
+write.table(save.mummichog_PLSDA_VIP2,file=mummichog_name,sep = "\t",row.names = F,quote = F)
+
+###################################################
+### Get correlated list with MetabNet
+###################################################
+#Get target list and feature table for MetabNet
+dir.temp <- paste(dir.folder,"PANDA_output_PLSDA",sep = "")
+setwd(dir.temp)
+if(is.residual == TRUE){
+  filename <- paste("Res_PLSDA_result_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".RData",sep="")
+}else{
+  filename <- paste("PLSDA_result_",Sys.Date(),"_vip",vip_threshold,"fc",foldchange_threshold,".RData",sep="")
+}
+load(filename)
+target_list <- save.plsresults.sigfeatures[,1:2]
+colnames(target_list) <- c("mz","time")
+
+dir.temp <- paste(dir.folder,"PANDA_input",sep = "")
+setwd(dir.temp)
+load(file = "HILIC_case_control_noexposure_residual_nonorm_WGCNA.RData")
+
+target_list_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_metabnet_target","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
+write.table(target_list,file=target_list_name,sep = "\t",row.names = F,quote = F)
+feature_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_metabnet_feature","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
+write.table(wide_save_residual,file=feature_name,sep = "\t",row.names = F,quote = F)
+
+#Conduct MetabNet
+library(MetabNet)
+
+#output location
+outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/MetabNet/vip2fc0.58"
+
+allowWGCNAThreads()
+net_res<-metabnet(feature_table_file=feature_name,
+                  target.metab.file=target_list_name, sig.metab.file=NA,
+                  parentoutput_dir=outloc,
+                  class_labels_file=NA,cor.method="spearman",abs.cor.thresh=0.6,cor.fdrthresh=0.2,
+                  cor.fdrmethod="BH",
+                  target.mzmatch.diff=0.01,
+                  target.rtmatch.diff=0.01,max.cor.num=150,num_replicates=1,summarize.replicates=FALSE,
+                  all.missing.thresh=0, rep.max.missing.thresh = 0,
+                  group.missing.thresh=NA,
+                  log2transform=FALSE,medcenter=FALSE,znormtransform=FALSE,quantile_norm=FALSE,lowess_norm=FALSE,madscaling=FALSE,missing.val=NA,
+                  networktype="complete", summary.na.replacement="bpca",samplermindex=NA,
+                  net_node_colors=c("yellow", "green"), net_node_shapes=c("rectangle","circle"),net_edge_colors=c("red","blue"),net_legend=FALSE,
+                  netrandseed =1106,num_nodes=6)
+
+#Retrive corelated features and save as mummichog file
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/MetabNet/Stage2")
+MetabNet.sigcorr.mztime <- read.table(file = "significant_correlations_targeted_matrix_mzlabels.txt", header = T, sep = "\t")
+MetabNet.FDR <- read.table(file = "correlation_FDR.txt", header = T, sep = "\t")
+MetabNet.list <- {}
+for(i in 1:nrow(MetabNet.sigcorr.mztime)){
+  temp <- colnames(MetabNet.sigcorr.mztime)[which(MetabNet.sigcorr.mztime[i,]!=0)]
+  MetabNet.list <- append(MetabNet.list, temp)
+}
+MetabNet.list <- substring(MetabNet.list,2)
+MetabNet.list <- append(MetabNet.list,row.names(MetabNet.FDR))
+MetabNet.list <- unique(MetabNet.list)
+MetabNet.list <- as.data.frame(MetabNet.list)
+for(i in 1:nrow(MetabNet.list)){
+  MetabNet.list[i,2] <- strsplit(as.character(MetabNet.list[i,1]),"_")[[1]][1]
+  MetabNet.list[i,3] <- strsplit(as.character(MetabNet.list[i,1]),"_")[[1]][2]
+}
+MetabNet.list <- MetabNet.list[,2:3]
+colnames(MetabNet.list) <- c("mz","time")
+MetabNet.list$flag <- 1
+MetabNet.list$mz <- as.numeric(MetabNet.list$mz)
+MetabNet.list$time <- as.numeric(MetabNet.list$time)
+
+save.mummichog_MetabNet<-merge(x=save.mummichog_PLSDA_VIP2,y=MetabNet.list,by=c("mz","time"),all.x=TRUE)
+save.mummichog_MetabNet$`p-value`[which(save.mummichog_MetabNet$flag==1)] <- 0.04
+save.mummichog_MetabNet <- save.mummichog_MetabNet[order(save.mummichog_MetabNet$`p-value`),-5]
+
+mummichog_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichogMTBNK_input","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
+write.table(save.mummichog_MetabNet,file=mummichog_name,sep = "\t",row.names = F,quote = F)
+
 ###################################################
 ### VI. Create box plots
 ###################################################
 library(xlsx)
 
+# load comp1: unexpo vs. expo control
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_control_expo_unexpo_residual3_WGCNA.RData")
+comp1.wide_save_residual <- wide_save_residual
+comp1.sampleID <- sampleID
+comp1.wide_save_residual$mz <- round(comp1.wide_save_residual$mz,4)
+comp1.wide_save_residual$time <- round(comp1.wide_save_residual$time,2)
+rm(sampleID)
+rm(wide_save_residual)
+# load comp4: unexpo vs. expo case
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Cases_ExpoUnexpo/PANDA_input/HILIC_case_expo_unexpo_residual3_WGCNA.RData")
+comp4.wide_save_residual <- wide_save_residual
+comp4.sampleID <- sampleID
+comp4.wide_save_residual$mz <- round(comp4.wide_save_residual$mz,4)
+comp4.wide_save_residual$time <- round(comp4.wide_save_residual$time,2)
+rm(sampleID)
+rm(wide_save_residual)
+
 load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_residual3_WGCNA.RData")
-load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-22.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-02-26.RData")
 wide_save_residual$mz <- round(wide_save_residual$mz,4)
 save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
 
-annotations_filename<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
-a_KEGG<-read.table(annotations_filename,sep="\t",header=TRUE)
+# annotations_filename<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
+# a_KEGG<-read.table(annotations_filename,sep="\t",header=TRUE)
 
 setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichog_0113/Res_HILIC_PLSDAvip2_model4/tsv")
 mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_PLSDAvip2.xlsx",sheetName = "Sheet1")
@@ -502,7 +600,7 @@ for(i in 1:nrow(mummichog.sig.pathway)){
   pdf(file = pdf_file,width=10,height=10)
   
   for(j in 1:length(mummichog.metabID[[i]])){
-    # par(mfrow=c(2,1))
+    par(mfrow=c(1,3))
     metab.mz <- mummichog.metabmz[[i]][j]
     metab.mz <- as.vector(strsplit(as.character(metab.mz),","))[[1]]
     metab.mz <- as.numeric(metab.mz)
@@ -515,7 +613,7 @@ for(i in 1:nrow(mummichog.sig.pathway)){
       matchmz <- metab.mz[l]
       metab.expr <- save.plsresults.sigfeatures[which(save.plsresults.sigfeatures$mz==matchmz),-c(3:6)]    # link mz with residual data, get the residual record of that metablite
       if(nrow(metab.expr)==0){
-        metab.expr <- wide_save_residual[which(wide_save_residual$mz==matchmz),-c(3:6)]
+        metab.expr <- wide_save_residual[which(wide_save_residual$mz==matchmz),]
       }
       for(k in 1:nrow(metab.expr)){                                           # For each metablite, it can be linked with multiple records
         box.mz <- metab.expr[k,1]
@@ -526,7 +624,162 @@ for(i in 1:nrow(mummichog.sig.pathway)){
         colnames(box.expr) <- c("Intensity","Group")
         box.expr$Intensity <- as.numeric(as.character(box.expr$Intensity))
         box.expr$Group <- as.factor(box.expr[,2])
-        title <- paste("metab: ",metab.name,"mz:",box.mz,"time:",box.time,sep = " ")
+        # title <- paste("metab: ",metab.name,"mz:",box.mz,"time:",box.time,sep = " ")
+        title <- metab.name
+        boxplot(Intensity~Group,data = box.expr,outline = FALSE,main=title)
+        
+        # Draw second comp
+        comp1.metab.expr <- comp1.wide_save_residual[which(comp1.wide_save_residual$mz==box.mz & comp1.wide_save_residual$time==box.time),]
+        comp1.box.expr <- t(comp1.metab.expr[1,-c(1,2)])
+        comp1.box.expr <- as.data.frame(cbind(comp1.box.expr,comp1.sampleID$factorcase))
+        colnames(comp1.box.expr) <- c("Intensity","Group")
+        comp1.box.expr$Intensity <- as.numeric(as.character(comp1.box.expr$Intensity))
+        comp1.box.expr$Group <- as.factor(comp1.box.expr[,2])
+        if(nrow(comp1.metab.expr)==0){
+          comp1.box.expr$Intensity=0
+        }
+        boxplot(Intensity~Group,data = comp1.box.expr,outline = FALSE)
+        
+        # draw third comp
+        comp4.metab.expr <- comp4.wide_save_residual[which(comp4.wide_save_residual$mz==box.mz & comp4.wide_save_residual$time==box.time),]
+        comp4.box.expr <- t(comp4.metab.expr[1,-c(1,2)])
+        comp4.box.expr <- as.data.frame(cbind(comp4.box.expr,comp4.sampleID$factorcase))
+        colnames(comp4.box.expr) <- c("Intensity","Group")
+        comp4.box.expr$Intensity <- as.numeric(as.character(comp4.box.expr$Intensity))
+        comp4.box.expr$Group <- as.factor(comp4.box.expr[,2])
+        if(nrow(comp4.metab.expr)==0){
+          comp4.box.expr$Intensity=0
+        }
+        boxplot(Intensity~Group,data = comp4.box.expr,outline = FALSE)
+      }
+    }
+  }
+  dev.off()
+}
+
+###################################################
+### VI. Create box plots II
+###################################################
+library(xlsx)
+
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_all_residual.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-05-01_vip2fc0.58.RData")
+wide_save_residual$mz <- round(wide_save_residual$mz,4)
+wide_save_residual$time <- round(wide_save_residual$time,2)
+save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
+
+sampleID <- class
+rm(class)
+sampleID$factorcase <- paste(sampleID$casecontrol..Factor.1.,sampleID$Exposure_category..Factor2.,sep = "")
+
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
+mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
+mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "_tentative_featurematch_")
+
+mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.05),])
+mummichog.metabID <- {}
+mummichog.metabID <- strsplit(as.character(mummichog.sig.pathway$overlap_features..id.),";")
+mummichog.metabmz <- {}
+mummichog.metabmz <- strsplit(as.character(mummichog.sig.pathway$used_input_mzs),";")
+
+mummichog.sig.pathway$pathway <- as.character(mummichog.sig.pathway$pathway)
+mummichog.sig.pathway$pathway[mummichog.sig.pathway$pathway=="Urea cycle/amino group metabolism"] <- "Urea cycle metabolism" # Change some pathway name since folder name cannot have /
+
+# Begin box plot
+for(i in 1:nrow(mummichog.sig.pathway)){
+  pathway.name <- as.character(mummichog.sig.pathway[i,1])
+  print(pathway.name)     # Obtain the name of pathways
+  
+  setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Pathway Box Plots")
+  pdf_file<-paste(pathway.name,".pdf",sep="")
+  pdf(file = pdf_file,width=10,height=10)
+  
+  for(j in 1:length(mummichog.metabID[[i]])){
+    metab.mz <- mummichog.metabmz[[i]][j]
+    metab.mz <- as.vector(strsplit(as.character(metab.mz),","))[[1]]
+    metab.mz <- as.numeric(metab.mz)
+    metab.name <- mummichog.MatchMetab[which(as.character(mummichog.MatchMetab$id)==mummichog.metabID[[i]][j]),]
+    metab.name <- as.character(metab.name[1,5])
+    if(length(metab.name)==0){
+      next}
+    for(l in 1:length(metab.mz)){
+      matchmz <- metab.mz[l]
+      metab.expr <- save.plsresults.sigfeatures[which(save.plsresults.sigfeatures$mz==matchmz),-c(3:6)]    # link mz with residual data, get the residual record of that metablite
+      if(nrow(metab.expr)==0){
+        metab.expr <- wide_save_residual[which(wide_save_residual$mz==matchmz),]
+      }
+      for(k in 1:nrow(metab.expr)){                                           # For each metablite, it can be linked with multiple records
+        box.mz <- metab.expr[k,1]
+        box.time <- metab.expr[k,2]
+        box.expr <- wide_save_residual[which(wide_save_residual$mz==box.mz & wide_save_residual$time==box.time),]
+        if(nrow(box.expr)==0){
+          next
+        }                                                 # Some metabolites can be found in saave.sigfeatures but not wide.save.residula for all subjects, that's because it might be missing > 80% in other groups and discard during preprocess
+        
+        box.expr <- t(box.expr[1,-c(1,2)])
+        box.expr <- as.data.frame(cbind(box.expr,sampleID$factorcase))
+        colnames(box.expr) <- c("Intensity","Group")
+        box.expr$Intensity <- as.numeric(as.character(box.expr$Intensity))
+        box.expr$Group <- as.factor(box.expr[,2])
+        title <- paste(metab.name,"\nmz:",box.mz,sep = " ")
+        # title <- metab.name
+        boxplot(Intensity~Group,data = box.expr,outline = FALSE,main=title)
+      }
+    }
+  }
+  dev.off()
+}
+
+#################
+# Plot modules
+#################
+setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
+mummichog.sig.module <- read.xlsx("mcg_modularanalysis_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
+mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "_tentative_featurematch_")
+
+mummichog.metabID <- {}
+mummichog.metabID <- strsplit(as.character(mummichog.sig.module$members..id.),",")
+
+mummichog.sig.module$MODULE <- as.character(mummichog.sig.module$MODULE)
+
+# Begin box plot
+for(i in 1:nrow(mummichog.sig.module)){
+  module.name <- as.character(mummichog.sig.module[i,1])
+  print(module.name)     # Obtain the name of modules
+  
+  setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/pathway Box Plots")
+  pdf_file<-paste(module.name,".pdf",sep="")
+  pdf(file = pdf_file,width=10,height=10)
+  
+  for(j in 1:length(mummichog.metabID[[i]])){
+    metab.id <- mummichog.metabID[[i]][j]
+    metab.mz <- mummichog.MatchMetab[which(as.character(mummichog.MatchMetab$id)==metab.id),1]
+    # metab.mz <- as.vector(strsplit(as.character(metab.mz),","))[[1]]
+    # metab.mz <- as.numeric(metab.mz)
+    metab.name <- mummichog.MatchMetab[which(as.character(mummichog.MatchMetab$id)==metab.id),]
+    metab.name <- as.character(metab.name[1,5])
+    if(length(metab.name)==0){
+      next}
+    for(l in 1:length(metab.mz)){
+      matchmz <- metab.mz[l]
+      metab.expr <- save.plsresults.sigfeatures[which(save.plsresults.sigfeatures$mz==matchmz),-c(3:6)]    # link mz with residual data, get the residual record of that metablite
+      if(nrow(metab.expr)==0){
+        metab.expr <- wide_save_residual[which(wide_save_residual$mz==matchmz),]
+      }
+      for(k in 1:nrow(metab.expr)){                                           # For each metablite, it can be linked with multiple records
+        box.mz <- metab.expr[k,1]
+        box.time <- metab.expr[k,2]
+        box.expr <- wide_save_residual[which(wide_save_residual$mz==box.mz & wide_save_residual$time==box.time),]
+        if(nrow(box.expr)==0){
+          next
+        }                                                 # Some metabolites can be found in save.sigfeatures but not wide.save.residula for all subjects, that's because it might be missing > 80% in other groups and discard during preprocess
+        box.expr <- t(box.expr[1,-c(1,2)])
+        box.expr <- as.data.frame(cbind(box.expr,sampleID$factorcase))
+        colnames(box.expr) <- c("Intensity","Group")
+        box.expr$Intensity <- as.numeric(as.character(box.expr$Intensity))
+        box.expr$Group <- as.factor(box.expr[,2])
+        title <- paste(metab.name,"\nmz:",box.mz,sep = " ")
+        # title <- metab.name
         boxplot(Intensity~Group,data = box.expr,outline = FALSE,main=title)
       }
     }
@@ -535,7 +788,31 @@ for(i in 1:nrow(mummichog.sig.pathway)){
 }
 
 ###################################################
-### VII. Re-annotate significant features with loose adducts
+### VII. Metaboanalyst
+###################################################
+
+library(xlsx)
+
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_control_expo_unexpo_classification_nonorm.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
+
+row.names(wide_save_residual) <- paste("met_",1:nrow(wide_save_residual),sep = "")
+feature <- cbind(sampleID[,c(1:2)],t(wide_save_residual[,-c(1:2)]))
+write.table(feature,file="C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/metaboanalyst.txt",sep = "\t",row.names = F,quote = F)
+
+metaboanalyst.sig <- read.csv("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/imp_features_cv.csv")
+after.prepro.linkid$X <- row.names(after.prepro.linkid)
+metaboanalyst.sig_cov <- merge(after.prepro.linkid,metaboanalyst.sig, by = "X")
+metaboanalyst.sig_cov <- metaboanalyst.sig_cov[order(-metaboanalyst.sig_cov$Importance),]
+
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-23.RData")
+temp <- save.plsresults.sigfeatures[,c(1,6)]
+check.cons <- merge(temp,metaboanalyst.sig_cov,by = "mz")
+check.cons <- check.cons[order(check.cons$rank),]
+
+
+###################################################
+### VIII. Re-annotate significant features with loose adducts
 ###################################################
 library(xMSannotator)
 
@@ -591,6 +868,35 @@ print(format(Sys.time(), "%a %b %d %X %Y"))
 
 pkg <- "package:xMSannotator"
 detach(pkg, character.only = TRUE)
+
+###################################################
+### IX. Get demographic distributions
+###################################################
+demo <- apply(sampleID[-c(1,2,8)], 2, function(x) table(x, by = sampleID$factorcase))
+demo
+for(i in 3:length(demo)){
+  fit <- fisher.test(demo[[i]])
+  print(paste(names(demo)[i],fit$p.value,sep = ":"))
+}
+
+
+###################################################
+### X. Linear regression for covariates and exposure 
+###################################################
+crude <- function(cov){
+  fit <- glm(as.factor(factorcase) ~ as.factor(sampleID[,cov]), data = sampleID, family = binomial())
+  summary(fit)
+  # exp(cbind(OR = coef(fit), confint(fit)))
+}
+crude("sex")
+crude("birthyear")
+crude("maternal_age")
+crude("maternal_raceeth")
+
+fit <- glm(as.factor(factorcase) ~ as.factor(sex)+as.factor(birthyear)+as.factor(maternal_age)+
+             as.factor(maternal_raceeth)+as.factor(maternal_edu)+as.factor(pregcompl)+as.factor(usborn), data = sampleID, family = binomial(link = "logit"))
+summary(fit)
+exp(cbind(OR = coef(fit), confint(fit)))
 
 # ###################################################
 # ### code chunk number 11: PLSDA-analysis.Rnw:267-285 (eval = FALSE)

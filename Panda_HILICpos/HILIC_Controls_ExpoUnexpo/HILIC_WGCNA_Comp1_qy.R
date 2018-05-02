@@ -4,7 +4,7 @@ library(tidyverse)
 options(stringsAsFactors = FALSE)
 # enableWGCNAThreads()
 
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
 # setwd("/u/home/q/qyan/AIME/HILIC_WGCNA_Comp1")
 load(file = "HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
 
@@ -104,34 +104,42 @@ signif(cor(MEs, use = "p"), 2)
 dissimME <- (1-t(cor(MEs, method = "p")))/2
 hclustdatME <- hclust(as.dist(dissimME), method = "average")
 plot(hclustdatME, main = "Clustering tree based of the module eigengenes")
+plotEigengeneNetworks(multiME = MEs, setLabels = "", marDendro = c(0, 4, 1, 2), marHeatmap = c(3, 4, 1, 2),
+                      cex.lab = 0.8)
+## merge close module
+merge <- mergeCloseModules(exprData = datExpr, colors = moduleColors, cutHeight = 0.25)
+moduleColors.merge <- merge$colors
+MEs.merge <- merge$newMEs
 ## plot heatmap and eigengene
-for(i in 1: length(unique(moduleColors))){
-  which.color <- unique(moduleColors)[i]
-  which.ME <- MEs[, paste("ME", which.color, sep = "")]
+for(i in 1: length(unique(moduleColors.merge))){
+  which.color <- unique(moduleColors.merge)[i]
+  which.ME <- MEs.merge[, paste("ME", which.color, sep = "")]
   par(mfrow = c(2,1), mar = c(0.3, 5.5, 3, 2))
-  plotMat(t(scale(datExpr[, which(moduleColors == which.color)])),
+  plotMat(t(scale(datExpr[, which(moduleColors.merge == which.color)])),
           nrgcols = 30, rlabels = F, rcols = which.color,
           main = which.color, cex.main = 2)
   par(mar=c(5, 4.2, 0, 0.7))
   barplot(which.ME, col = which.color, main = "", cex.main = 2,
-          ylab = "wigengene expression", xlab = "array sample")
+          ylab = "eigengene expression", xlab = "array sample")
 }
- 
-moduleTraitCor = bicor(MEs, cor_trait, maxPOutliers = 0.05, robustY = FALSE);
+
+cor_trait.combine <- data.frame(cor_trait, datTraits$maternal_age, datTraits$maternal_raceeth, datTraits$preterm)
+colnames(cor_trait.combine) <- c("factor", "maternal_age", "maternal_race", "preterm")
+moduleTraitCor <- bicor(MEs.merge, cor_trait.combine, maxPOutliers = 1, robustY = FALSE);
 # moduleTraitCor = cor(MEs, cor_trait, use = "p");
-moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples);
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples);
 
 sizeGrWindow(10,6)
 ## Will display correlations and their p-values
-textMatrix =  paste(signif(moduleTraitCor, 2), "\n(",
+textMatrix <-  paste(signif(moduleTraitCor, 2), "\n(",
                     signif(moduleTraitPvalue, 1), ")", sep = "");
 dim(textMatrix) = dim(moduleTraitCor)
 par(mar = c(6, 8.5, 3, 3));
 ## Display the correlation values within a heatmap plot
 labeledHeatmap(Matrix = moduleTraitCor,
-               xLabels = names(cor_trait),
-               yLabels = names(MEs),
-               ySymbols = names(MEs),
+               xLabels = names(cor_trait.combine),
+               yLabels = names(MEs.merge),
+               ySymbols = names(MEs.merge),
                colorLabels = FALSE,
                colors = greenWhiteRed(50),
                textMatrix = textMatrix,
@@ -142,34 +150,39 @@ labeledHeatmap(Matrix = moduleTraitCor,
 
 save(moduleTraitCor, moduleTraitPvalue, file = "HILIC_WGCNA_ModuleTrait_corr.RData")
 
-## Define variable weight containing the weight column of datTrait
 ## which is cor_trait
 ## names (colors) of the modules
-modNames = substring(names(MEs), 3)
+modNames <- substring(names(MEs.merge), 3)
 
-geneModuleMembership = as.data.frame(bicor(datExpr, MEs, maxPOutliers = 0.05));
-MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
+geneModuleMembership <- as.data.frame(bicor(datExpr, MEs.merge, maxPOutliers = 1));
+MMPvalue <- as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
 
-names(geneModuleMembership) = paste("MM", modNames, sep="");
-names(MMPvalue) = paste("p.MM", modNames, sep="");
+names(geneModuleMembership) <- paste("MM", modNames, sep="");
+names(MMPvalue) <- paste("p.MM", modNames, sep="");
 
-geneTraitSignificance = as.data.frame(bicor(datExpr, cor_trait, maxPOutliers = 0.05, robustY = FALSE));
-GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSamples));
+geneTraitSignificance <- as.data.frame(bicor(datExpr, cor_trait.combine$factor, maxPOutliers = 1, robustY = FALSE));
+GSPvalue <- as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSamples));
 
-names(geneTraitSignificance) = paste("GS.", names(cor_trait), sep="");
-names(GSPvalue) = paste("p.GS.", names(cor_trait), sep="");
+names(geneTraitSignificance) <- paste("GS.", names(cor_trait.combine)[1], sep="");
+names(GSPvalue) <- paste("p.GS.", names(cor_trait.combine)[1], sep="");
 
 ## Intramodular analysis: identifying genes with high GS and MM
-module = "brown"
-column = match(module, modNames);
-moduleGenes = moduleColors==module;
+module <- "purple"
+column <- match(module, modNames);
+moduleGenes <- moduleColors.merge==module;
 
 sizeGrWindow(7, 7);
 par(mfrow = c(1,1));
 verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
                    abs(geneTraitSignificance[moduleGenes, 1]),
                    xlab = paste("Module Membership in", module, "module"),
-                   ylab = "Gene significance for body weight",
+                   ylab = "Gene significance",
+                   main = paste("Module membership vs. gene significance\n"),
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
+verboseScatterplot(abs(-log(MMPvalue[moduleGenes, column])),
+                   abs(-log(GSPvalue[moduleGenes, 1])),
+                   xlab = paste("Module Membership P value in", module, "module"),
+                   ylab = "Gene significance P value",
                    main = paste("Module membership vs. gene significance\n"),
                    cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
 

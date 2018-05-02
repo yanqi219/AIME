@@ -1,7 +1,7 @@
 
 library("xlsx")
 
-setwd("C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
+setwd("C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range")
 
 HILIC_feature_combat<-read.table("HILICpos_mzcalibrated_featuretable_COMBAT.txt",header = T)
 HILIC_feature_raw<-read.table("HILICpos_mzcalibrated_featuretable_RAW.txt",header = T)
