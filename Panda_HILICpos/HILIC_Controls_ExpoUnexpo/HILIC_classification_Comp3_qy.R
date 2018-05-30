@@ -810,6 +810,17 @@ temp <- save.plsresults.sigfeatures[,c(1,6)]
 check.cons <- merge(temp,metaboanalyst.sig_cov,by = "mz")
 check.cons <- check.cons[order(check.cons$rank),]
 
+# Map pathway metabolites to KEGG
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
+mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
+
+mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.05),])
+mummichog.metabID <- {}
+mummichog.metabID <- strsplit(as.character(mummichog.sig.pathway$overlap_features..id.),";")
+metabID <- unique(unlist(mummichog.metabID))
+metabID <- as.data.frame(metabID)
+metabID$color <- "black"
+
 
 ###################################################
 ### VIII. Re-annotate significant features with loose adducts
