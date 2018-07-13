@@ -47,7 +47,52 @@ sink(logfile) # sink()
 pdf(file = pdf_file,width=10,height=10)
 
 # Load data
- 
+print("Good Luck, Have Fun!")
+print("Read metabolomics data")
+print("After preprocess")
+
+dir.temp <- paste(dir.folder,"PANDA_input",sep = "")
+setwd(dir.temp)
+
+if(is.residual == FALSE){
+  load(file = "C18_control_expo_unexpo_classification_nonorm.RData")
+  
+  X <- after.prepro.feature
+  linkid <- after.prepro.linkid
+  row.names(sampleID) <- sampleID$SampleID
+  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Exposed", 1, ifelse(sampleID$factorcase == "Unexposed", 0, 99)))
+  sampleID$factorcase <- as.factor(sampleID$factorcase)
+  Y <- sampleID$factorcase
+  levels(Y) = c("control","case")
+  
+  X = X[ ,apply(X[,1:ncol(X)],2,var) != 0] # remove 0 variance variables
+  
+  X_caret <- as.data.frame(cbind(X,Y))
+  X_caret$Y <- as.factor(X_caret$Y)
+  levels(X_caret$Y) = c("control","case")
+  
+  rm(after.prepro.feature)
+  rm(after.prepro.linkid)
+}else{
+  load(file = "C18_control_expo_unexpo_residual_nonorm_WGCNA.RData")
+  
+  row.names(wide_save_residual) <- c(paste("met_",1:nrow(wide_save_residual),sep = ""))
+  linkid <- wide_save_residual[,1:2]
+  X <- t(as.matrix(wide_save_residual[,-c(1:2)]))
+  row.names(sampleID) <- sampleID$SampleID
+  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Exposed", 1, ifelse(sampleID$factorcase == "Unexposed", 0, 99)))
+  sampleID$factorcase <- as.factor(sampleID$factorcase)
+  Y <- sampleID$factorcase
+  levels(Y) = c("control","case")
+  
+  X = X[ ,apply(X[,1:ncol(X)],2,var) != 0] # remove 0 variance variables
+  
+  X_caret <- as.data.frame(cbind(X,Y))
+  X_caret$Y <- as.factor(X_caret$Y)
+  levels(X_caret$Y) = c("control","case")
+  
+  rm(wide_save_residual)
+}
 
 # exp.X_caret <- read.table("http://archive.ics.uci.edu/ml/machine-learning-databases/arcene/ARCENE/arcene_train.data", sep = " ",
 #                      colClasses = c(rep("numeric", 10000), "NULL"))
