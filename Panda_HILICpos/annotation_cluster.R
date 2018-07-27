@@ -32,7 +32,8 @@ library(xMSannotator)
 # load(file = "Res_PLSDA_result_2018-05-31_vip2fc0.RData")
 setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
 # setwd("/u/home/q/qyan/AIME/Annotation")
-load(file = "HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
+# load(file = "HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
+load(file = "HILIC_control_expo_unexpo_classification_nonorm.RData")
 
 data(adduct_table)
 data(adduct_weights)
@@ -45,7 +46,9 @@ normalization <- function(x){
 
 # input_data <- save.plsresults.sigfeatures[,-c(3:6)]
 # input_data.norm <- cbind(input_data[,c(1,2)],apply(input_data[,-c(1,2)],2,normalization))
-input_data <- wide_save_residual
+# input_data <- wide_save_residual
+input_data <- as.data.frame(t(after.prepro.feature))
+input_data <- cbind(after.prepro.linkid,input_data)
 dataA<-input_data
 
 outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_Annotation/sigfeature_annotation"
@@ -53,7 +56,7 @@ outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HI
 
 max.mz.diff<-10  #mass search tolerance for DB matching in ppm
 max.rt.diff<-10 #retention time tolerance between adducts/isotopes
-corthresh<-0.5 #correlation threshold between adducts/isotopes
+corthresh<-0.7 #correlation threshold between adducts/isotopes
 max_isp=5 #maximum number of isotopes to search for
 mass_defect_window=0.01 #mass defect window for isotope search
 
