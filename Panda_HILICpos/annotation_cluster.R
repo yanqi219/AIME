@@ -28,31 +28,152 @@
 
 library(xMSannotator)
 
-# setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA")
-# load(file = "Res_PLSDA_result_2018-05-31_vip2fc0.RData")
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input")
-# setwd("/u/home/q/qyan/AIME/Annotation")
-# load(file = "HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
-load(file = "HILIC_control_expo_unexpo_classification_nonorm.RData")
+annotation <- function(wd, data, outloc, database, mode){
+  # setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA")
+  # load(file = "Res_PLSDA_result_2018-05-31_vip2fc0.RData")
+  setwd(wd)
+  # setwd("/u/home/q/qyan/AIME/Annotation")
+  # load(file = "HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
+  load(file = data)
+  
+  data(adduct_table)
+  data(adduct_weights)
+  
+  normalization <- function(x){
+    return((x-mean(x))/(max(x)-min(x)))
+  }
+  
+  ###########Parameters to change##############
+  
+  # input_data <- save.plsresults.sigfeatures[,-c(3:6)]
+  # input_data.norm <- cbind(input_data[,c(1,2)],apply(input_data[,-c(1,2)],2,normalization))
+  # input_data <- wide_save_residual
+  input_data <- as.data.frame(t(after.prepro.feature))
+  input_data <- cbind(after.prepro.linkid,input_data)
+  dataA<-input_data
+  
+  outloc<-outloc
+  # outloc<-"/u/home/q/qyan/AIME/Annotation/HILIC"
+  
+  max.mz.diff<-10  #mass search tolerance for DB matching in ppm
+  max.rt.diff<-10 #retention time tolerance between adducts/isotopes
+  corthresh<-0.7 #correlation threshold between adducts/isotopes
+  max_isp=5 #maximum number of isotopes to search for
+  mass_defect_window=0.01 #mass defect window for isotope search
+  
+  num_nodes<-4   #number of cores to be used; 2 is recommended for desktop computers due to high memory consumption
+  
+  db_name=database #other options: HMDB,Custom,KEGG, LipidMaps, T3DB
+  status="Detected and Quantified" #other options: "Detected", NA, "Detected and Quantified", "Expected and Not Quantified"
+  num_sets<-300 #number of sets into which the total number of database entries should be split into;
+  
+  mode<-mode #ionization mode
+  # queryadductlist=c("M+H","M+2H","M+H+NH4","M+ACN+2H","M+2ACN+2H","M+NH4","M+Na","M+ACN+H","M+ACN+Na","M+2ACN+H","2M+H","2M+Na","2M+ACN+H","M+2Na-H","M+H-H2O","M+H-2H2O") #other options: c("M-H","M-H2O-H","M+Na-2H","M+Cl","M+FA-H"); c("positive"); c("negative"); c("all");see data(adduct_table) for complete list
+  queryadductlist=c("all")
+  if(mode == "pos"){
+    filter = "M+H"
+  }else{
+    filter = "M-H"
+  }
+  
+  #provide list of database IDs (depending upon selected database) for annotating only specific metabolites
+  customIDs<-NA #c("HMDB15352","HMDB60549","HMDB00159","HMDB00222"); read.csv("/Users/mzmatch_95stdmx_HMDBIDs.csv")
+  customDB<-NA 
+  
+  #########################
+  
+  dataA<-unique(dataA)
+  print(dim(dataA))
+  print(format(Sys.time(), "%a %b %d %X %Y"))
+  
+  system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,max.rt.diff=max.rt.diff,cormethod="pearson",
+                                             num_nodes=num_nodes,queryadductlist=queryadductlist,
+                                             mode=mode,outloc=outloc,db_name=db_name, adduct_weights=adduct_weights,num_sets=num_sets,allsteps=TRUE,
+                                             corthresh=corthresh,NOPS_check=TRUE,customIDs=customIDs,missing.value=NA,
+                                             deepsplit=2,networktype="unsigned",minclustsize=10,module.merge.dissimilarity=0.2,filter.by=c(filter),
+                                             biofluid.location="Blood",origin=NA,status=status,boostIDs=NA,max_isp=max_isp,
+                                             customDB=customDB,MplusH.abundance.ratio.check = FALSE, min_ions_perchem = 1,
+                                             HMDBselect="all",mass_defect_window=mass_defect_window,pathwaycheckmode="pm",mass_defect_mode="both")
+  )
+  
+  
+  print(format(Sys.time(), "%a %b %d %X %Y"))
+  
+  # pkg <- "package:xMSannotator"
+  # detach(pkg, character.only = TRUE)
+}
+
+annotation(wd = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input",
+           data = "C18_control_expo_unexpo_classification_nonorm.RData",
+           outloc = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_Annotation/sigfeature_annotation/KEGG",
+           database = "KEGG",
+           mode = "neg")
+
+annotation(wd = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/PANDA_input",
+           data = "C18_case_control_noexposure_classification_nonorm.RData",
+           outloc = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_Annotation/sigfeature_annotation/HMDB",
+           database = "HMDB",
+           mode = "neg")
+annotation(wd = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/PANDA_input",
+           data = "C18_case_control_noexposure_classification_nonorm.RData",
+           outloc = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_Annotation/sigfeature_annotation/LipidMaps",
+           database = "LipidMaps",
+           mode = "neg")
+annotation(wd = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/PANDA_input",
+           data = "C18_case_control_noexposure_classification_nonorm.RData",
+           outloc = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_Annotation/sigfeature_annotation/KEGG",
+           database = "KEGG",
+           mode = "neg")
+
+annotation(wd = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input",
+           data = "HILIC_case_control_noexposure_classification_nonorm.RData",
+           outloc = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_Annotation/sigfeature_annotation/LipidMaps",
+           database = "LipidMaps",
+           mode = "pos")
+annotation(wd = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input",
+           data = "HILIC_control_expo_unexpo_classification_nonorm.RData",
+           outloc = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_Annotation/sigfeature_annotation/LipidMaps",
+           database = "LipidMaps",
+           mode = "pos")
+
+############################
+# Annotate all features
+############################
+library(xmsPANDA)
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/")
+
+# class <- read.csv(file = "HILIC_classlabels_for_panda_all.txt", sep = '\t', header = T)
+# feature <- read.csv(file = "HILIC_ftrsmzcalib_combat_ordered_all.txt", sep = '\t', header = T)
+class <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_classlabels_for_panda_all.txt"
+feature <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_ftrsmzcalib_combat_ordered_all.txt"
+outloc <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos"
+
+ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
+                                      summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0,group.missing.thresh=0,
+                                      log2transform=TRUE,medcenter=FALSE,znormtransform=FALSE,quantile_norm=FALSE,lowess_norm=FALSE,madscaling=FALSE,missing.val=0,
+                                      samplermindex=NA,rep.max.missing.thresh=0.5,summary.na.replacement="halfdatamin",featselmethod=NA)
+feature <- as.data.frame(ready_for_regression$data_matrix_afternorm_scaling)
+na_count <-sapply(feature, function(y) sum(is.na(y)))
+summary(na_count)
+
+row.names(feature) <- c(paste("met_",1:nrow(feature),sep = ""))
+after.prepro.linkid <- feature[,1:2]
+after.prepro.feature <- t(feature[,-c(1:2)])
+after.prepro.feature <- after.prepro.feature[order(row.names(after.prepro.feature)), ]
+
+save(after.prepro.feature, after.prepro.linkid, file = "HILIC_annotation_input.RData")
+
+input_data <- as.data.frame(t(after.prepro.feature))
+input_data <- cbind(after.prepro.linkid,input_data)
 
 data(adduct_table)
 data(adduct_weights)
 
-normalization <- function(x){
-  return((x-mean(x))/(max(x)-min(x)))
-}
-
 ###########Parameters to change##############
 
-# input_data <- save.plsresults.sigfeatures[,-c(3:6)]
-# input_data.norm <- cbind(input_data[,c(1,2)],apply(input_data[,-c(1,2)],2,normalization))
-# input_data <- wide_save_residual
-input_data <- as.data.frame(t(after.prepro.feature))
-input_data <- cbind(after.prepro.linkid,input_data)
 dataA<-input_data
 
-outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_Annotation/sigfeature_annotation"
-# outloc<-"/u/home/q/qyan/AIME/Annotation/HILIC"
+outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/KEGG"
 
 max.mz.diff<-10  #mass search tolerance for DB matching in ppm
 max.rt.diff<-10 #retention time tolerance between adducts/isotopes
@@ -62,7 +183,7 @@ mass_defect_window=0.01 #mass defect window for isotope search
 
 num_nodes<-4   #number of cores to be used; 2 is recommended for desktop computers due to high memory consumption
 
-db_name="HMDB" #other options: HMDB,Custom,KEGG, LipidMaps, T3DB
+db_name="KEGG" #other options: HMDB,Custom,KEGG, LipidMaps, T3DB
 status="Detected and Quantified" #other options: "Detected", NA, "Detected and Quantified", "Expected and Not Quantified"
 num_sets<-300 #number of sets into which the total number of database entries should be split into;
 
@@ -73,18 +194,18 @@ queryadductlist=c("all")
 #provide list of database IDs (depending upon selected database) for annotating only specific metabolites
 customIDs<-NA #c("HMDB15352","HMDB60549","HMDB00159","HMDB00222"); read.csv("/Users/mzmatch_95stdmx_HMDBIDs.csv")
 customDB<-NA 
-  
+
 #########################
 
 dataA<-unique(dataA)
 print(dim(dataA))
 print(format(Sys.time(), "%a %b %d %X %Y"))
 
-system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,max.rt.diff=max.rt.diff,cormethod="spearman",
+system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,max.rt.diff=max.rt.diff,cormethod="pearson",
                                            num_nodes=num_nodes,queryadductlist=queryadductlist,
                                            mode=mode,outloc=outloc,db_name=db_name, adduct_weights=adduct_weights,num_sets=num_sets,allsteps=TRUE,
                                            corthresh=corthresh,NOPS_check=TRUE,customIDs=customIDs,missing.value=NA,
-                                           deepsplit=4,networktype="unsigned",minclustsize=5,module.merge.dissimilarity=0.5,filter.by=c("M+H"),
+                                           deepsplit=2,networktype="unsigned",minclustsize=10,module.merge.dissimilarity=0.2,filter.by=c("M+H"),
                                            biofluid.location="Blood",origin=NA,status=status,boostIDs=NA,max_isp=max_isp,
                                            customDB=customDB,MplusH.abundance.ratio.check = FALSE, min_ions_perchem = 1,
                                            HMDBselect="all",mass_defect_window=mass_defect_window,pathwaycheckmode="pm",mass_defect_mode="both")
@@ -92,6 +213,3 @@ system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,m
 
 
 print(format(Sys.time(), "%a %b %d %X %Y"))
-
-# pkg <- "package:xMSannotator"
-# detach(pkg, character.only = TRUE)
