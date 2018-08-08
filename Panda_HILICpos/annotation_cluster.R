@@ -140,28 +140,29 @@ annotation(wd = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoU
 # Annotate all features
 ############################
 library(xmsPANDA)
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/")
 
-# class <- read.csv(file = "HILIC_classlabels_for_panda_all.txt", sep = '\t', header = T)
-# feature <- read.csv(file = "HILIC_ftrsmzcalib_combat_ordered_all.txt", sep = '\t', header = T)
-class <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_classlabels_for_panda_all.txt"
-feature <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_ftrsmzcalib_combat_ordered_all.txt"
-outloc <- "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos"
-
-ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
-                                      summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0,group.missing.thresh=0,
-                                      log2transform=TRUE,medcenter=FALSE,znormtransform=FALSE,quantile_norm=FALSE,lowess_norm=FALSE,madscaling=FALSE,missing.val=0,
-                                      samplermindex=NA,rep.max.missing.thresh=0.5,summary.na.replacement="halfdatamin",featselmethod=NA)
-feature <- as.data.frame(ready_for_regression$data_matrix_afternorm_scaling)
-na_count <-sapply(feature, function(y) sum(is.na(y)))
-summary(na_count)
-
-row.names(feature) <- c(paste("met_",1:nrow(feature),sep = ""))
-after.prepro.linkid <- feature[,1:2]
-after.prepro.feature <- t(feature[,-c(1:2)])
-after.prepro.feature <- after.prepro.feature[order(row.names(after.prepro.feature)), ]
-
-save(after.prepro.feature, after.prepro.linkid, file = "HILIC_annotation_input.RData")
+# # class <- read.csv(file = "HILIC_classlabels_for_panda_all.txt", sep = '\t', header = T)
+# # feature <- read.csv(file = "HILIC_ftrsmzcalib_combat_ordered_all.txt", sep = '\t', header = T)
+# class <- "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_classlabels_for_panda_all.txt"
+# feature <- "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_ftrsmzcalib_combat_ordered_all.txt"
+# outloc <- "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg"
+# 
+# ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
+#                                       summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0,group.missing.thresh=0,
+#                                       log2transform=FALSE,medcenter=FALSE,znormtransform=FALSE,quantile_norm=FALSE,lowess_norm=FALSE,madscaling=FALSE,missing.val=0,
+#                                       samplermindex=NA,rep.max.missing.thresh=0.5,summary.na.replacement="halfdatamin",featselmethod=NA)
+# feature <- as.data.frame(ready_for_regression$data_matrix_afternorm_scaling)
+# na_count <-sapply(feature, function(y) sum(is.na(y)))
+# summary(na_count)
+# 
+# row.names(feature) <- c(paste("met_",1:nrow(feature),sep = ""))
+# after.prepro.linkid <- feature[,1:2]
+# after.prepro.feature <- t(feature[,-c(1:2)])
+# after.prepro.feature <- after.prepro.feature[order(row.names(after.prepro.feature)), ]
+# 
+# save(after.prepro.feature, after.prepro.linkid, file = "C18_annotation_input.RData")
+load("C18_annotation_input.RData")
 
 input_data <- as.data.frame(t(after.prepro.feature))
 input_data <- cbind(after.prepro.linkid,input_data)
@@ -173,7 +174,7 @@ data(adduct_weights)
 
 dataA<-input_data
 
-outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/KEGG"
+outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/sigfeature_annotation/KEGG"
 
 max.mz.diff<-10  #mass search tolerance for DB matching in ppm
 max.rt.diff<-10 #retention time tolerance between adducts/isotopes
@@ -187,7 +188,7 @@ db_name="KEGG" #other options: HMDB,Custom,KEGG, LipidMaps, T3DB
 status="Detected and Quantified" #other options: "Detected", NA, "Detected and Quantified", "Expected and Not Quantified"
 num_sets<-300 #number of sets into which the total number of database entries should be split into;
 
-mode<-"pos" #ionization mode
+mode<-"neg" #ionization mode
 # queryadductlist=c("M+H","M+2H","M+H+NH4","M+ACN+2H","M+2ACN+2H","M+NH4","M+Na","M+ACN+H","M+ACN+Na","M+2ACN+H","2M+H","2M+Na","2M+ACN+H","M+2Na-H","M+H-H2O","M+H-2H2O") #other options: c("M-H","M-H2O-H","M+Na-2H","M+Cl","M+FA-H"); c("positive"); c("negative"); c("all");see data(adduct_table) for complete list
 queryadductlist=c("all")
 
@@ -205,7 +206,7 @@ system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,m
                                            num_nodes=num_nodes,queryadductlist=queryadductlist,
                                            mode=mode,outloc=outloc,db_name=db_name, adduct_weights=adduct_weights,num_sets=num_sets,allsteps=TRUE,
                                            corthresh=corthresh,NOPS_check=TRUE,customIDs=customIDs,missing.value=NA,
-                                           deepsplit=2,networktype="unsigned",minclustsize=10,module.merge.dissimilarity=0.2,filter.by=c("M+H"),
+                                           deepsplit=2,networktype="unsigned",minclustsize=10,module.merge.dissimilarity=0.2,filter.by=c("M-H"),
                                            biofluid.location="Blood",origin=NA,status=status,boostIDs=NA,max_isp=max_isp,
                                            customDB=customDB,MplusH.abundance.ratio.check = FALSE, min_ions_perchem = 1,
                                            HMDBselect="all",mass_defect_window=mass_defect_window,pathwaycheckmode="pm",mass_defect_mode="both")
