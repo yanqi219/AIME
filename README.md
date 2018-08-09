@@ -29,4 +29,4 @@
 9) More visualization: Draw Boxplot for Poster
    - Used to draw barplot for pathways
 10) Create final table: Create_final_table
-   - Combine results from feature selection, xMSannotator, mummichog, and in-house library verification together
+    - Combine results from feature selection, xMSannotator, mummichog, and in-house library verification together
