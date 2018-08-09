@@ -214,3 +214,28 @@ system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,m
 
 
 print(format(Sys.time(), "%a %b %d %X %Y"))
+
+################################
+# Verify annotation using in-house library
+################################
+
+# mz tolerance = 5ppm, time tolerance = 15s
+
+library(fuzzyjoin)
+
+HILIC_library <- read.table(file = "C:/Users/Qi/Dropbox/AIME/PNS_Ritz/IROA_input_file_hilicpos_vjune282018.txt", sep = "\t", header = T)
+C18_library <- read.table(file = "C:/Users/Qi/Dropbox/AIME/PNS_Ritz/IROA_input_file_c18neg_vjune282018.txt", sep = "\t", header = T)
+
+load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_annotation_input.RData")
+HILIC_verify <- difference_left_join(after.prepro.linkid, HILIC_library, by = "mz", max_dist = 0.005)
+HILIC_verify <- HILIC_verify[-which(is.na(HILIC_verify$mz.y)),]
+timeout <- which(abs(HILIC_verify$time.x - HILIC_verify$time.y)>=15)
+HILIC_verify <- HILIC_verify[-timeout,]
+write.table(HILIC_verify, file = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/HILIC_annotation_verified.txt", sep = "\t", row.names = F,quote = F)
+
+load("C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_annotation_input.RData")
+C18_verify <- difference_left_join(after.prepro.linkid, C18_library, by = "mz", max_dist = 0.005)
+C18_verify <- C18_verify[-which(is.na(C18_verify$mz.y)),]
+timeout <- which(abs(C18_verify$time.x - C18_verify$time.y)>=15)
+C18_verify <- C18_verify[-timeout,]
+write.table(C18_verify, file = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Annotation/C18_annotation_verified.txt", sep = "\t", row.names = F,quote = F)
