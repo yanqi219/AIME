@@ -74,6 +74,24 @@ if(is.residual == FALSE){
   rm(after.prepro.feature)
   rm(after.prepro.linkid)
 }else{
+  # For fold change
+  
+  load(file = "C18_control_expo_unexpo_classification_nonorm.RData")
+  X <- after.prepro.feature
+  linkid <- after.prepro.linkid
+  row.names(sampleID) <- sampleID$SampleID
+  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Exposed", 1, ifelse(sampleID$factorcase == "Unexposed", 0, 99)))
+  sampleID$factorcase <- as.factor(sampleID$factorcase)
+  Y <- sampleID$factorcase
+  levels(Y) = c("control","case")
+  
+  X = X[ ,apply(X[,1:ncol(X)],2,var) != 0] # remove 0 variance variables
+  
+  fc.X_caret <- as.data.frame(cbind(X,Y))
+  fc.X_caret$Y <- as.factor(fc.X_caret$Y)
+  levels(fc.X_caret$Y) = c("control","case")
+  rm(after.prepro.feature, after.prepro.linkid)
+  
   load(file = "C18_control_expo_unexpo_residual_nonorm_WGCNA.RData")
   
   row.names(wide_save_residual) <- c(paste("met_",1:nrow(wide_save_residual),sep = ""))
@@ -201,7 +219,7 @@ fc <- f(fc.X)
 vip_w_fc <- cbind(vip.plsda.datExpr,fc)
 
 # another way to calculate fold change and direction
-fc.updown <- as.data.frame(t(aggregate(X_caret[,1:ncol(X_caret)-1],list(X_caret$Y), mean)))
+fc.updown <- as.data.frame(t(aggregate(fc.X_caret[,1:ncol(fc.X_caret)-1],list(fc.X_caret$Y), mean)))
 colnames(fc.updown) <- c("control","case")
 fc.updown <- fc.updown[-1,]
 fc.updown <- as.data.frame(apply(fc.updown,2,function(x) as.numeric(x)))
