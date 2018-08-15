@@ -12,12 +12,12 @@ is.residual = TRUE
 
 optimal_comp = FALSE
 components = 5
-vip_threshold = 2.5
-foldchange_threshold = 0
+vip_threshold = 2
+foldchange_threshold = 0.58
 is.log = TRUE
 fold_cv = 10
 nrepeat = 50
-pred.eval.method = "CV"
+pred.eval.method = "BER"
 cluster.method = "dist" #"dist" or "bicor" #Residual can only use "dist"
 cpu = 4
 
@@ -70,10 +70,29 @@ if(is.residual == FALSE){
   X_caret <- as.data.frame(cbind(X,Y))
   X_caret$Y <- as.factor(X_caret$Y)
   levels(X_caret$Y) = c("control","case")
+  fc.X_caret <- X_caret
   
   rm(after.prepro.feature)
   rm(after.prepro.linkid)
 }else{
+  # For fold change
+  
+  load(file = "HILIC_case_control_noexposure_classification_nonorm.RData")
+  X <- after.prepro.feature
+  linkid <- after.prepro.linkid
+  row.names(sampleID) <- sampleID$SampleID
+  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Case", 1, ifelse(sampleID$factorcase == "Control", 0, 99)))
+  sampleID$factorcase <- as.factor(sampleID$factorcase)
+  Y <- sampleID$factorcase
+  levels(Y) = c("control","case")
+  
+  X = X[ ,apply(X[,1:ncol(X)],2,var) != 0] # remove 0 variance variables
+  
+  fc.X_caret <- as.data.frame(cbind(X,Y))
+  fc.X_caret$Y <- as.factor(fc.X_caret$Y)
+  levels(fc.X_caret$Y) = c("control","case")
+  rm(after.prepro.feature, after.prepro.linkid)
+  
   load(file = "HILIC_case_control_noexposure_residual_nonorm_WGCNA.RData")
   
   row.names(wide_save_residual) <- c(paste("met_",1:nrow(wide_save_residual),sep = ""))
@@ -201,7 +220,7 @@ fc <- f(fc.X)
 vip_w_fc <- cbind(vip.plsda.datExpr,fc)
 
 # another way to calculate fold change and direction
-fc.updown <- as.data.frame(t(aggregate(X_caret[,1:ncol(X_caret)-1],list(X_caret$Y), mean)))
+fc.updown <- as.data.frame(t(aggregate(fc.X_caret[,1:ncol(fc.X_caret)-1],list(fc.X_caret$Y), mean)))
 colnames(fc.updown) <- c("control","case")
 fc.updown <- fc.updown[-1,]
 fc.updown <- as.data.frame(apply(fc.updown,2,function(x) as.numeric(x)))
@@ -521,7 +540,7 @@ net_res<-metabnet(feature_table_file=feature_name,
                   netrandseed =1106,num_nodes=6)
 
 #Retrive corelated features and save as mummichog file
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/MetabNet/Stage2")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/MetabNet/vip2fc0.58/Stage2")
 MetabNet.sigcorr.mztime <- read.table(file = "significant_correlations_targeted_matrix_mzlabels.txt", header = T, sep = "\t")
 MetabNet.FDR <- read.table(file = "correlation_FDR.txt", header = T, sep = "\t")
 MetabNet.list <- {}
@@ -733,7 +752,7 @@ for(i in 1:nrow(mummichog.sig.pathway)){
 #################
 # Plot modules
 #################
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
 mummichog.sig.module <- read.xlsx("mcg_modularanalysis_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
 mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "_tentative_featurematch_")
 
@@ -747,7 +766,7 @@ for(i in 1:nrow(mummichog.sig.module)){
   module.name <- as.character(mummichog.sig.module[i,1])
   print(module.name)     # Obtain the name of modules
   
-  setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/pathway Box Plots")
+  setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/pathway Box Plots")
   pdf_file<-paste(module.name,".pdf",sep="")
   pdf(file = pdf_file,width=10,height=10)
   
