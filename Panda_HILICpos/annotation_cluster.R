@@ -185,7 +185,7 @@ mass_defect_window=0.01 #mass defect window for isotope search
 num_nodes<-4   #number of cores to be used; 2 is recommended for desktop computers due to high memory consumption
 
 db_name="KEGG" #other options: HMDB,Custom,KEGG, LipidMaps, T3DB
-status="Detected and Quantified" #other options: "Detected", NA, "Detected and Quantified", "Expected and Not Quantified"
+status=NA #other options: "Detected", NA, "Detected and Quantified", "Expected and Not Quantified"
 num_sets<-300 #number of sets into which the total number of database entries should be split into;
 
 mode<-"neg" #ionization mode
@@ -207,7 +207,7 @@ system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,m
                                            mode=mode,outloc=outloc,db_name=db_name, adduct_weights=adduct_weights,num_sets=num_sets,allsteps=TRUE,
                                            corthresh=corthresh,NOPS_check=TRUE,customIDs=customIDs,missing.value=NA,
                                            deepsplit=2,networktype="unsigned",minclustsize=10,module.merge.dissimilarity=0.2,filter.by=c("M-H"),
-                                           biofluid.location="Blood",origin=NA,status=status,boostIDs=NA,max_isp=max_isp,
+                                           biofluid.location=NA,origin=NA,status=status,boostIDs=NA,max_isp=max_isp,
                                            customDB=customDB,MplusH.abundance.ratio.check = FALSE, min_ions_perchem = 1,
                                            HMDBselect="all",mass_defect_window=mass_defect_window,pathwaycheckmode="pm",mass_defect_mode="both")
 )

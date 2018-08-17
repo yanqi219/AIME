@@ -62,7 +62,9 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
 
     # combine pathway with link
     mummichog_pathway_complete <- merge(mummichog_link, mummichog_pathway_expand, by = "EmpiricalCompound", all = T)
-    mummichog_pathway_complete <- mummichog_pathway_complete[-which(is.na(mummichog_pathway_complete$pathway)),]
+    if(length(which(is.na(mummichog_pathway_complete$pathway))) != 0){
+      mummichog_pathway_complete <- mummichog_pathway_complete[-which(is.na(mummichog_pathway_complete$pathway)),]
+    }
     mummichog_pathway_complete <- mummichog_pathway_complete[order(mummichog_pathway_complete$pathway),]
 
     names(mummichog_pathway_complete)[names(mummichog_pathway_complete) == "Input.m.z"] <- "mz"
@@ -189,7 +191,9 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
     
     # combine pathway with link
     mummichog_pathway_complete <- merge(mummichog_link, mummichog_pathway_expand, by = "EmpiricalCompound", all = T)
-    mummichog_pathway_complete <- mummichog_pathway_complete[-which(is.na(mummichog_pathway_complete$pathway)),]
+    if(length(which(is.na(mummichog_pathway_complete$pathway))) != 0){
+      mummichog_pathway_complete <- mummichog_pathway_complete[-which(is.na(mummichog_pathway_complete$pathway)),]
+    }
     mummichog_pathway_complete <- mummichog_pathway_complete[order(mummichog_pathway_complete$pathway),]
     
     names(mummichog_pathway_complete)[names(mummichog_pathway_complete) == "Input.m.z"] <- "mz"
@@ -269,16 +273,16 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
 
 HILIC_autism <- final_table(wd_annotation = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/",
                             wd_feature = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/",
-                            data_feature_pls = "Res_PLSDA_result_2018-08-14_vip2fc0.58.RData",
-                            data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichogMTBNK_input_vip2fc0.58.txt",
-                            wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogOL_vip2fc0.58MTBNK/tables/",
+                            data_feature_pls = "Res_PLSDA_result_2018-08-16_vip2fc0.RData",
+                            data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichog_input_vip2fc0.txt",
+                            wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogOL_vip2fc0/tables/",
                             data_verified = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/HILIC_annotation_verified.txt")
 
 C18_autism <- final_table(wd_annotation = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/sigfeature_annotation/",
                           wd_feature = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/PANDA_output_PLSDA/",
-                          data_feature_pls = "Res_PLSDA_result_2018-08-14_vip2fc0.58.RData",
-                          data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/mummichogMTBNK_input_vip2fc0.58.txt",
-                          wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/C18_mummichogOL_MTBNKvip2fc0.58/tables",
+                          data_feature_pls = "Res_PLSDA_result_2018-08-16_vip2fc0.RData",
+                          data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/mummichog_input_vip2fc0.txt",
+                          wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/C18_mummichogOL_vip2fc0/tables",
                           data_verified = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/C18_annotation_verified.txt")
 
 HILIC_autism <- HILIC_autism[-which(is.na(HILIC_autism$pathway)&is.na(HILIC_autism$Verified_KEGGID)&is.na(HILIC_autism$Verified_HMDBID)),]
@@ -290,17 +294,17 @@ write.table(C18_autism, file = "C:/Users/QiYan/Dropbox/AIME/Results/Autism/C18_f
 # Autism whole list
 HILIC_autism <- final_table(wd_annotation = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/",
                             wd_feature = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/",
-                            data_feature_pls = "Res_PLSDA_result_2018-08-14_vip2fc0.58.RData",
-                            data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichogMTBNK_input_vip2fc0.58.txt",
-                            wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogOL_vip2fc0.58MTBNK/tables/",
+                            data_feature_pls = "Res_PLSDA_result_2018-08-16_vip2fc0.RData",
+                            data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichog_input_vip2fc0.txt",
+                            wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogOL_vip2fc0/tables/",
                             data_verified = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/HILIC_annotation_verified.txt",
                             whole_list = T)
 
 C18_autism <- final_table(wd_annotation = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/sigfeature_annotation/",
                           wd_feature = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/PANDA_output_PLSDA/",
-                          data_feature_pls = "Res_PLSDA_result_2018-08-14_vip2fc0.58.RData",
-                          data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/mummichogMTBNK_input_vip2fc0.58.txt",
-                          wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/C18_mummichogOL_MTBNKvip2fc0.58/tables",
+                          data_feature_pls = "Res_PLSDA_result_2018-08-16_vip2fc0.RData",
+                          data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/mummichog_input_vip2fc0.txt",
+                          wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/C18_mummichogOL_vip2fc0/tables",
                           data_verified = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/C18_annotation_verified.txt",
                           whole_list = T)
 

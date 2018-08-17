@@ -76,9 +76,14 @@ if(is.residual == FALSE){
 }else{
   # For fold change
   
+  
   load(file = "C18_control_expo_unexpo_classification_nonorm.RData")
-  X <- after.prepro.feature
-  linkid <- after.prepro.linkid
+  # X <- after.prepro.feature
+  # linkid <- after.prepro.linkid
+  load("C18_control_expo_unexpo_raw.RData")
+  row.names(feature) <- c(paste("met_",1:nrow(feature),sep = ""))
+  linkid <- feature[,1:2]
+  X <- t(as.matrix(feature[,-c(1:2)]))
   row.names(sampleID) <- sampleID$SampleID
   sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Exposed", 1, ifelse(sampleID$factorcase == "Unexposed", 0, 99)))
   sampleID$factorcase <- as.factor(sampleID$factorcase)
@@ -219,15 +224,32 @@ fc <- f(fc.X)
 vip_w_fc <- cbind(vip.plsda.datExpr,fc)
 
 # another way to calculate fold change and direction
-fc.updown <- as.data.frame(t(aggregate(fc.X_caret[,1:ncol(fc.X_caret)-1],list(fc.X_caret$Y), mean)))
-colnames(fc.updown) <- c("control","case")
-fc.updown <- fc.updown[-1,]
-fc.updown <- as.data.frame(apply(fc.updown,2,function(x) as.numeric(x)))
-if(is.log == TRUE){
-  fc.updown$foldchange = fc.updown$case-fc.updown$control
-}else{
-  fc.updown$foldchange = fc.updown$case/fc.updown$control
+
+# fc.updown <- as.data.frame(t(aggregate(fc.X_caret[,1:ncol(fc.X_caret)-1],list(fc.X_caret$Y), mean)))
+# colnames(fc.updown) <- c("control","case")
+# fc.updown <- fc.updown[-1,]
+# fc.updown <- as.data.frame(apply(fc.updown,2,function(x) as.numeric(x)))
+# if(is.log == TRUE){
+#   fc.updown$foldchange = fc.updown$case-fc.updown$control
+# }else{
+#   fc.updown$foldchange = fc.updown$case/fc.updown$control
+# }
+fc.empty <- data.frame()
+for(i in 1:(ncol(fc.X_caret)-1)){
+  case.temp <- fc.X_caret[which(as.character(fc.X_caret$Y) == "case"),i]
+  # case <- mean(case.temp[!(abs(case.temp - median(case.temp)) > 2*sd(case.temp))])
+  case <- mean(log2(case.temp[!(abs(case.temp - median(case.temp)) > 2*sd(case.temp))]))
+  control.temp <- fc.X_caret[which(as.character(fc.X_caret$Y) == "control"),i]
+  # control <- mean(control.temp[!(abs(control.temp - median(control.temp)) > 2*sd(control.temp))])
+  control <- mean(log2(control.temp[!(abs(control.temp - median(control.temp)) > 2*sd(control.temp))]))
+  fc.empty[i,1] <- case
+  fc.empty[i,2] <- control
 }
+colnames(fc.empty) <- c("case","control")
+# fc.empty$foldchange = log2(fc.empty$case/fc.empty$control)
+fc.empty$foldchange = fc.empty$case-fc.empty$control
+fc.updown <- fc.empty
+rm(fc.empty,case,case.temp,control, control.temp)
 
 # get vip score for all expr features and plot manhattan plots
 print("Calculate vip score and plot manhattan plots")
@@ -429,7 +451,7 @@ print(paste("Number of significant features:",nrow(save.plsresults.sigfeatures),
 
 save.mummichog_PLSDA_VIP2 <- save.plsresults.allfeatures[,1:4]
 save.mummichog_PLSDA_VIP2$"p-value" = 0.051
-save.mummichog_PLSDA_VIP2$`p-value`[save.mummichog_PLSDA_VIP2$vip>=vip_threshold&abs(save.mummichog_PLSDA_VIP2$foldchange)>=foldchange_threshold] <- 0.004
+save.mummichog_PLSDA_VIP2$`p-value`[save.mummichog_PLSDA_VIP2$vip>=vip_threshold&abs(save.mummichog_PLSDA_VIP2$foldchange)>=foldchange_threshold] <- 0.04
 save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[order(save.mummichog_PLSDA_VIP2$`p-value`,-save.mummichog_PLSDA_VIP2$vip),]
 save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[,c(1,2,5,4)]
 

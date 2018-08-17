@@ -4,7 +4,7 @@ library(ggplot2)
 #Load data
 
 load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_classification_nonorm.RData")
-load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-08-15_vip2fc0.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-08-16_vip2fc0.RData")
 
 # comp.mode = "Unexpo_CaseControl" # "Control_ExpoUnexpo","Unexpo_CaseControl","Case_ExpoUnexpo","Expo_CaseControl"
 # 
@@ -53,9 +53,11 @@ load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls
 # feature.order <- feature.order[order(row.names(feature.order)),]
 # feature.order <- as.data.frame(t(feature.order))
 # feature <- cbind(feature.temp,feature.order)
+###############################################################
+# feature <- as.data.frame(t(after.prepro.feature))
+# feature <- cbind(after.prepro.linkid, feature)
 
-feature <- as.data.frame(t(after.prepro.feature))
-feature <- cbind(after.prepro.linkid, feature)
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_raw.RData")
 
 feature$mz <- round(feature$mz,4)
 feature$time <- round(feature$time,1)
@@ -94,7 +96,7 @@ targeted_box_plot <-
 # targeted_box_plot(mz = 169.03562,time = 100.23, metablite_name = "Urate", adductform = "M+H")
 
 #HILICpos
-targeted_box_plot(mz = 281.2474,time = 33.6, metablite_name = "Linoleate", adductform = "M+H[+]", pathway = "Fatty acid activation")
+targeted_box_plot(mz = 281.2474,time = 33.6, metablite_name = "Linoleate", adductform = "M+H[1+]", pathway = "Fatty acid activation")
 targeted_box_plot(mz = 251.2006,time = 27.4, metablite_name = "Tetradecanoic acid", adductform = "M+Na[1+]", pathway = "Fatty acid activation")
 targeted_box_plot(mz = 297.2422,time = 239.1, metablite_name = "13(S)-HODE", adductform = "M+H[1+]", pathway = "Linoleate metabolism")
 targeted_box_plot(mz = 279.2318,time = 33.6, metablite_name = "Gamma-Linolenic acid", adductform = "M+H[1+]", pathway = "Linoleate metabolism")
