@@ -11,9 +11,9 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
     # annotation
     ####################
     setwd(wd_annotation)
-    annotation_HMDB <- read.csv(file = "HMDB/Stage5.csv", sep = ",", header = T)
-    annotation_KEGG <- read.csv(file = "KEGG/Stage5.csv", sep = ",", header = T)
-    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage5.csv", sep = ",", header = T)
+    annotation_HMDB <- read.csv(file = "HMDB/Stage4.csv", sep = ",", header = T)
+    annotation_KEGG <- read.csv(file = "KEGG/Stage4.csv", sep = ",", header = T)
+    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage4.csv", sep = ",", header = T)
     
     ####################
     # feature selection - mummichog server
@@ -147,9 +147,9 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
     #####################################
     
     setwd(wd_annotation)
-    annotation_HMDB <- read.csv(file = "HMDB/Stage5.csv", sep = ",", header = T)
-    annotation_KEGG <- read.csv(file = "KEGG/Stage5.csv", sep = ",", header = T)
-    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage5.csv", sep = ",", header = T)
+    annotation_HMDB <- read.csv(file = "HMDB/Stage4.csv", sep = ",", header = T)
+    annotation_KEGG <- read.csv(file = "KEGG/Stage4.csv", sep = ",", header = T)
+    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage4.csv", sep = ",", header = T)
     
     setwd(wd_feature)
     load(data_feature_pls)
@@ -273,15 +273,15 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
 
 HILIC_autism <- final_table(wd_annotation = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/",
                             wd_feature = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/",
-                            data_feature_pls = "Res_PLSDA_result_2018-08-16_vip2fc0.RData",
-                            data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichog_input_vip2fc0.txt",
+                            data_feature_pls = "Res_PLSDA_result_2018-09-08_vip2fc0.RData",
+                            data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichog_input_vip2fc0_2018-09-08.txt",
                             wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogOL_vip2fc0/tables/",
                             data_verified = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/HILIC_annotation_verified.txt")
 
 C18_autism <- final_table(wd_annotation = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/sigfeature_annotation/",
                           wd_feature = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/PANDA_output_PLSDA/",
-                          data_feature_pls = "Res_PLSDA_result_2018-08-16_vip2fc0.RData",
-                          data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/mummichog_input_vip2fc0.txt",
+                          data_feature_pls = "Res_PLSDA_result_2018-09-17_vip2fc0.RData",
+                          data_feature_mummichogInput = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/mummichog_input_vip2fc0_2018-09-17.txt",
                           wd_pathway = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/C18_mummichog/C18_mummichogOL_vip2fc0/tables",
                           data_verified = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/C18_annotation_verified.txt")
 

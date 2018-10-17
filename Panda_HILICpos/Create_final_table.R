@@ -11,9 +11,9 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
     # annotation
     ####################
     setwd(wd_annotation)
-    annotation_HMDB <- read.csv(file = "HMDB/Stage5.csv", sep = ",", header = T)
-    annotation_KEGG <- read.csv(file = "KEGG/Stage5.csv", sep = ",", header = T)
-    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage5.csv", sep = ",", header = T)
+    annotation_HMDB <- read.csv(file = "HMDB/Stage4.csv", sep = ",", header = T)
+    annotation_KEGG <- read.csv(file = "KEGG/Stage4.csv", sep = ",", header = T)
+    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage4.csv", sep = ",", header = T)
     
     ####################
     # feature selection - mummichog server
@@ -163,9 +163,9 @@ final_table <- function(wd_annotation, wd_feature, data_feature_pls, data_featur
     #####################################
     
     setwd(wd_annotation)
-    annotation_HMDB <- read.csv(file = "HMDB/Stage5.csv", sep = ",", header = T)
-    annotation_KEGG <- read.csv(file = "KEGG/Stage5.csv", sep = ",", header = T)
-    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage5.csv", sep = ",", header = T)
+    annotation_HMDB <- read.csv(file = "HMDB/Stage4.csv", sep = ",", header = T) # round before R!!!!!
+    annotation_KEGG <- read.csv(file = "KEGG/Stage4.csv", sep = ",", header = T)
+    annotation_LipidMaps <- read.csv(file = "LipidMaps/Stage4.csv", sep = ",", header = T)
     
     setwd(wd_feature)
     load(data_feature_pls)
@@ -260,52 +260,52 @@ write.table(C18_autism, file = "C:/Users/Qi/Dropbox/AIME/Results/Autism/C18_fina
 # Air pollution
 HILIC_ap <- final_table(wd_annotation = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/",
                         wd_feature = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA/",
-                        data_feature_pls = "Res_PLSDA_result_2018-05-31_vip2fc0.RData",
-                        data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",
-                        wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/HILIC_mummichog_vip2fc0_0531/tsv/",
-                        data_pathway = "mcg_pathwayanalysis_HILIC_mummichog_vip2fc0_0531.xlsx",
+                        data_feature_pls = "Res_PLSDA_result_2018-08-19_vip2fc0.RData",
+                        data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/mummichog_input_vip2fc0_2018-08-19.txt",
+                        wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/HILIC_mummichog_vip2fc0_0820_major/tsv/",
+                        data_pathway = "mcg_pathwayanalysis_HILIC_mummichog_vip2fc0_0820.xlsx",
                         data_verified = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/HILIC_annotation_verified.txt"
 )
 
 C18_ap <- final_table(wd_annotation = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Annotation/sigfeature_annotation/",
                       wd_feature = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/",
-                      data_feature_pls = "Res_PLSDA_result_2018-05-31_vip2fc0.RData",
-                      data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",
-                      wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0531/tsv/",
-                      data_pathway = "mcg_pathwayanalysis_C18_mummichog_vip2fc0_0531.xlsx",
+                      data_feature_pls = "Res_PLSDA_result_2018-08-19_vip2fc0.RData",
+                      data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input_vip2fc0_2018-08-19.txt",
+                      wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0820_major/tsv/",
+                      data_pathway = "mcg_pathwayanalysis_C18_mummichog_vip2fc0_0820.xlsx",
                       data_verified = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Annotation/C18_annotation_verified.txt")
 
 HILIC_ap <- HILIC_ap[-which(is.na(HILIC_ap$pathway)&is.na(HILIC_ap$Verified_KEGGID)&is.na(HILIC_ap$Verified_HMDBID)),]
 C18_ap <- C18_ap[-which(is.na(C18_ap$pathway)&is.na(C18_ap$Verified_KEGGID)&is.na(C18_ap$Verified_HMDBID)),]
 
-write.table(HILIC_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/HILIC_final_table.txt", sep = "\t", row.names = F,quote = F)
-write.table(C18_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/C18_final_table.txt", sep = "\t", row.names = F,quote = F)
+write.table(HILIC_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/HILIC_final_table_v3.txt", sep = "\t", row.names = F,quote = F)
+write.table(C18_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/C18_final_table_v3.txt", sep = "\t", row.names = F,quote = F)
 
 
 # Air pollution Whole list
 HILIC_ap <- final_table(wd_annotation = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/",
                         wd_feature = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA/",
-                        data_feature_pls = "Res_PLSDA_result_2018-05-31_vip2fc0.RData",
-                        data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",
-                        wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/HILIC_mummichog_vip2fc0_0531/tsv/",
-                        data_pathway = "mcg_pathwayanalysis_HILIC_mummichog_vip2fc0_0531.xlsx",
+                        data_feature_pls = "Res_PLSDA_result_2018-08-19_vip2fc0.RData",
+                        data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/mummichog_input_vip2fc0_2018-08-19.txt",
+                        wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/HILIC_mummichog_vip2fc0_0820_major/tsv/",
+                        data_pathway = "mcg_pathwayanalysis_HILIC_mummichog_vip2fc0_0820.xlsx",
                         data_verified = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/HILIC_annotation_verified.txt",
                         whole_list = TRUE)
 
 C18_ap <- final_table(wd_annotation = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Annotation/sigfeature_annotation/",
                       wd_feature = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/",
-                      data_feature_pls = "Res_PLSDA_result_2018-05-31_vip2fc0.RData",
-                      data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",
-                      wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0531/tsv/",
-                      data_pathway = "mcg_pathwayanalysis_C18_mummichog_vip2fc0_0531.xlsx",
+                      data_feature_pls = "Res_PLSDA_result_2018-08-19_vip2fc0.RData",
+                      data_feature_mummichogInput = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input_vip2fc0_2018-08-19.txt",
+                      wd_pathway = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0820_major/tsv/",
+                      data_pathway = "mcg_pathwayanalysis_C18_mummichog_vip2fc0_0820.xlsx",
                       data_verified = "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Annotation/C18_annotation_verified.txt",
                       whole_list = TRUE)
 
-HILIC_ap <- HILIC_ap[-which(is.na(HILIC_ap$chemical_ID)),]
-C18_ap <- C18_ap[-which(is.na(C18_ap$chemical_ID)),]
+HILIC_ap <- HILIC_ap[-which(is.na(HILIC_ap$chemical_ID)&is.na(HILIC_ap$Verified_KEGGID)&is.na(HILIC_ap$Verified_HMDBID)),]
+C18_ap <- C18_ap[-which(is.na(C18_ap$chemical_ID)&is.na(C18_ap$Verified_KEGGID)&is.na(C18_ap$Verified_HMDBID)),]
 
-write.table(HILIC_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/HILIC_whole_table.txt", sep = "\t", row.names = F,quote = F)
-write.table(C18_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/C18_whole_table.txt", sep = "\t", row.names = F,quote = F)
+write.table(HILIC_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/HILIC_whole_table_v3.txt", sep = "\t", row.names = F,quote = F)
+write.table(C18_ap, file = "C:/Users/Qi/Dropbox/AIME/Results/Air pollution/C18_whole_table_v3.txt", sep = "\t", row.names = F,quote = F)
 
 # Autism whole list
 HILIC_autism <- final_table(wd_annotation = "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/sigfeature_annotation/",
