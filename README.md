@@ -30,3 +30,7 @@
    - Used to draw barplot for pathways
 10) Create final table: Create_final_table
     - Combine results from feature selection, xMSannotator, mummichog, and in-house library verification together
+11) HMDB search
+    - Scraping HMDB database based on in-house library
+12) MetBoruta.py
+    - Random Forest Boruta function in python
