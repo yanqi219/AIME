@@ -5,9 +5,9 @@ library(mixOmics)
 
 ##pre-process metabolic data
 
-class <- "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_classlabels_control_expo_unexpo.txt"
-feature <- "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
-outloc <-"C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA"
+class <- "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_classlabels_control_expo_unexpo.txt"
+feature <- "C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt"
+outloc <-"C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA"
 
 ready_for_regression<-data_preprocess(Xmat=NA,Ymat=NA,feature_table_file=feature,parentoutput_dir=outloc,class_labels_file=class,num_replicates=3,feat.filt.thresh=NA,
                                       summarize.replicates=TRUE,summary.method="median",all.missing.thresh=0.5,group.missing.thresh=0.8,
@@ -23,10 +23,10 @@ after.prepro.linkid <- feature[,1:2]
 after.prepro.feature <- t(feature[,-c(1:2)])
 after.prepro.feature <- after.prepro.feature[ order(row.names(after.prepro.feature)), ]
 
-setwd("C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/C18neg_ThermoHFQE_85to1275_mz_range")
+setwd("C:/Users/Qi/Dropbox/AIME/PNS_Ritz/C18neg_ThermoHFQE_85to1275_mz_range")
 load(file = "C18_class.rda")
 
-# setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input")
+# setwd("C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input")
 # feature <- read.table("C18_ftrsmzcalib_combat_ordered_control_expo_unexpo.txt",sep="\t",header=TRUE)
 
 ##extract covariates
@@ -67,6 +67,18 @@ sampleID$maternal_edu[which(sampleID$maternal_edu==2)] <- 1
 sampleID$maternal_edu[which(sampleID$maternal_edu==3)] <- 2
 sampleID$maternal_edu[which(sampleID$maternal_edu==4)] <- 3
 sampleID$maternal_edu[which(sampleID$maternal_edu==5)] <- 4
+
+# Check outliers
+pca.datExpr = pca(after.prepro.feature, ncomp = 10, center = TRUE, scale = TRUE)
+plot(pca.datExpr,main = "Variance explained by PCs using all features")
+plotIndiv(pca.datExpr, group = sampleID$factorcase, ind.names = FALSE, 
+          legend = TRUE, title = 'PC score using all features after preprocessing')
+plotIndiv(pca.datExpr, group = sampleID$factorcase, ind.names = TRUE, 
+          legend = TRUE, title = 'PC score using all features after preprocessing')
+# Remove outliers
+after.prepro.feature <- after.prepro.feature[-which(row.names(after.prepro.feature)=="M2249033_VS100001F16757_2"),]
+sampleID <- sampleID[-which(sampleID$SampleID=="M2249033_VS100001F16757_2"),]
+feature <- feature[,-which(colnames(feature)=="M2249033_VS100001F16757_2")]
 
 # reformat feature table from wide to long, create unique metabolite id number, link with covariates table
 feature <- cbind(c(1:nrow(feature)),feature)
@@ -126,7 +138,7 @@ sampleID <- subset(sampleID, sampleID$SampleID %in% complete_sub)
 after.prepro.feature <- subset(after.prepro.feature,row.names(after.prepro.feature) %in% complete_sub)
 
 ##save data file
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input")
+setwd("C:/Users/Qi/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input")
 save(sampleID, wide_save_residual, file = "C18_control_expo_unexpo_residual_nonorm_WGCNA.RData") ## for WGCNA
 save_sampleID <- sampleID[,c(1:2)]
 write.table(save_sampleID,file="C18_residuals_classlabels_control_expo_unexpo.txt",sep = "\t",row.names = F,quote = F)

@@ -193,6 +193,7 @@ row.names(wide_save_residual) <- c(1:nrow(wide_save_residual))
 wide_save_residual<-wide_save_residual[sapply(wide_save_residual, function(x) !any(is.na(x)))]
 complete_sub <- row.names(t(wide_save_residual[,-c(1:2)]))
 sampleID <- subset(sampleID, sampleID$SampleID %in% complete_sub)
+after.prepro.feature <- subset(after.prepro.feature,row.names(after.prepro.feature) %in% complete_sub)
 
 ##save data file
 dir.file <- paste(dir.folder,"PANDA_input",sep = "")
