@@ -3,7 +3,6 @@ library(mixOmics)
 library(e1071)
 library(ROCR)
 library(RColorBrewer)
-library(ggrepel)
 # library(caret)
 
 #################################
@@ -22,7 +21,7 @@ pred.eval.method = "BER"
 cluster.method = "dist" #"dist" or "bicor" #Residual can only use "dist"
 cpu = 4
 
-dir.folder <- "C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/"
+dir.folder <- "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/"
 
 #################################
 # Start!
@@ -56,12 +55,12 @@ dir.temp <- paste(dir.folder,"PANDA_input",sep = "")
 setwd(dir.temp)
 
 if(is.residual == FALSE){
-  load(file = "HILIC_case_control_noexposure_classification_nonorm.RData")
+  load(file = "C18_control_expo_unexpo_classification_nonorm.RData")
   
   X <- after.prepro.feature
   linkid <- after.prepro.linkid
   row.names(sampleID) <- sampleID$SampleID
-  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Case", 1, ifelse(sampleID$factorcase == "Control", 0, 99)))
+  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Exposed", 1, ifelse(sampleID$factorcase == "Unexposed", 0, 99)))
   sampleID$factorcase <- as.factor(sampleID$factorcase)
   Y <- sampleID$factorcase
   levels(Y) = c("control","case")
@@ -71,22 +70,22 @@ if(is.residual == FALSE){
   X_caret <- as.data.frame(cbind(X,Y))
   X_caret$Y <- as.factor(X_caret$Y)
   levels(X_caret$Y) = c("control","case")
-  fc.X_caret <- X_caret
   
   rm(after.prepro.feature)
   rm(after.prepro.linkid)
 }else{
   # For fold change
   
-  load(file = "HILIC_case_control_noexposure_classification_nonorm.RData")
+  
+  load(file = "C18_control_expo_unexpo_classification_nonorm.RData")
   # X <- after.prepro.feature
   # linkid <- after.prepro.linkid
-  load("HILIC_case_control_noexposure_raw.RData")
+  load("C18_control_expo_unexpo_raw.RData")
   row.names(feature) <- c(paste("met_",1:nrow(feature),sep = ""))
   linkid <- feature[,1:2]
   X <- t(as.matrix(feature[,-c(1:2)]))
   row.names(sampleID) <- sampleID$SampleID
-  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Case", 1, ifelse(sampleID$factorcase == "Control", 0, 99)))
+  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Exposed", 1, ifelse(sampleID$factorcase == "Unexposed", 0, 99)))
   sampleID$factorcase <- as.factor(sampleID$factorcase)
   Y <- sampleID$factorcase
   levels(Y) = c("control","case")
@@ -98,13 +97,13 @@ if(is.residual == FALSE){
   levels(fc.X_caret$Y) = c("control","case")
   rm(after.prepro.feature, after.prepro.linkid)
   
-  load(file = "HILIC_case_control_noexposure_residual_nonorm_WGCNA.RData")
+  load(file = "C18_control_expo_unexpo_residual_nonorm_WGCNA.RData")
   
   row.names(wide_save_residual) <- c(paste("met_",1:nrow(wide_save_residual),sep = ""))
   linkid <- wide_save_residual[,1:2]
   X <- t(as.matrix(wide_save_residual[,-c(1:2)]))
   row.names(sampleID) <- sampleID$SampleID
-  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Case", 1, ifelse(sampleID$factorcase == "Control", 0, 99)))
+  sampleID$factorcase <- as.numeric(ifelse(sampleID$factorcase == "Exposed", 1, ifelse(sampleID$factorcase == "Unexposed", 0, 99)))
   sampleID$factorcase <- as.factor(sampleID$factorcase)
   Y <- sampleID$factorcase
   levels(Y) = c("control","case")
@@ -266,70 +265,40 @@ vip.for.selection$group[vip.for.selection$vip >= vip_threshold & vip.for.selecti
 ggplot2::ggplot(vip.for.selection,aes(x=mz,y=vip)) +
   geom_point(aes(colour = cut(group, c(-Inf,0,1,2,Inf))),size=1,show.legend = FALSE) + 
   scale_fill_hue(c=20, l=20) + 
-  scale_color_manual(values = c("#999999","springgreen3","firebrick1")) +
-  geom_hline(aes(yintercept = 2),color = "red",size = 0.5,linetype = "dashed") +
-  scale_x_continuous(breaks = pretty(vip.for.selection$mz, n = 10))+
-  scale_y_continuous(breaks = pretty(vip.for.selection$vip, n = 10))+
-  # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  theme_bw(base_size = 12)+
-  theme(axis.text=element_text(face="bold"),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        plot.title = element_text(size=12, face="bold"),
-        axis.title.x = element_text(size=12, face="bold"),
-        axis.title.y = element_text(size=12, face="bold"))+
-  labs(x="M/Z",y="VIP Score") +
-  ggtitle("Type 1 manhattan plot (VIP vs mz)")
+  scale_color_manual(values = c("#999999","#66CC99","#CC6666")) +
+  geom_hline(aes(yintercept = 2),color = "red",size = 1,linetype = "dashed") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(x="M/Z",y="VIP") +
+  ggtitle("Type 1 manhattan plot (VIP vs mz)
+          red: lower in class case & green: higher in class case")
 
 ggplot2::ggplot(vip.for.selection,aes(x=time,y=vip)) +
   geom_point(aes(colour = cut(group, c(-Inf,0,1,2,Inf))),size=1,show.legend = FALSE) + 
   scale_fill_hue(c=20, l=20) + 
-  scale_color_manual(values = c("#999999","springgreen3","firebrick1")) +
-  geom_hline(aes(yintercept = 2),color = "red",size = 0.5,linetype = "dashed") +
-  scale_x_continuous(breaks = pretty(vip.for.selection$time, n = 10))+
-  scale_y_continuous(breaks = pretty(vip.for.selection$vip, n = 10))+
-  # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  theme_bw(base_size = 12)+
-  theme(axis.text=element_text(face="bold"),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        plot.title = element_text(size=12, face="bold"),
-        axis.title.x = element_text(size=12, face="bold"),
-        axis.title.y = element_text(size=12, face="bold"))+
-  labs(x="Retention Time",y="VIP Score") +
-  ggtitle("Type 2 manhattan plot (VIP vs retention time)")
+  scale_color_manual(values = c("#999999","#66CC99","#CC6666")) +
+  geom_hline(aes(yintercept = 2),color = "red",size = 1,linetype = "dashed") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(x="Retention Time",y="VIP") +
+  ggtitle("Type 2 manhattan plot (VIP vs retention time)
+          green: lower in class case & red: higher in class case")
 
-# volcano <- vip.for.selection[,c(1:4)]
-# volcano$group <- ifelse(volcano$vip>=vip_threshold&volcano$foldchange>=foldchange_threshold,2,
-#                         ifelse(volcano$vip>=vip_threshold&volcano$foldchange<=-foldchange_threshold,1,0))
-# volcano$size <- ifelse(volcano$group == 0,0,1)
 
 volcano <- vip.for.selection[,c(1:4)]
-volcano$group <- ifelse(volcano$vip>=vip_threshold&volcano$foldchange>=1,3,
-                        ifelse(volcano$vip>=vip_threshold&volcano$foldchange<=-1,2,
-                               ifelse(volcano$vip>=vip_threshold&abs(volcano$foldchange)<=1,1,0)))
+volcano$group <- ifelse(volcano$vip>=vip_threshold&volcano$foldchange>=foldchange_threshold,2,
+                        ifelse(volcano$vip>=vip_threshold&volcano$foldchange<=-foldchange_threshold,1,0))
 volcano$size <- ifelse(volcano$group == 0,0,1)
 
 ggplot2::ggplot(volcano,aes(x=foldchange,y=vip)) +
-  geom_point(aes(colour=cut(group, c(-Inf,0,1,2,Inf))),show.legend = FALSE) + 
+  geom_point(aes(colour=cut(group, c(-Inf,0,1,2,Inf)),size=size),show.legend = FALSE) + 
   xlim(-3.8,3.8) +
   scale_fill_hue(c=20, l=20) + 
-  scale_color_manual(values = c("#999999","goldenrod3","springgreen3","firebrick1")) + 
+  scale_color_manual(values = c("#999999","#66CC99","#CC6666")) + 
   scale_size_continuous(range = c(1,3)) +
-  geom_hline(aes(yintercept = 2),color = "black",size = 0.5,linetype = "dashed") +
-  geom_vline(aes(xintercept = 1),color = "black",size = 0.5,linetype = "dashed") +
-  geom_vline(aes(xintercept = -1),color = "black",size = 0.5,linetype = "dashed") +
-  labs(x="Log2(Fold Change)",y="VIP Score") +
-  # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  theme_bw(base_size = 12)+
-  theme(axis.text=element_text(face="bold"),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        plot.title = element_text(size=12, face="bold"),
-        axis.title.x = element_text(size=12, face="bold"),
-        axis.title.y = element_text(size=12, face="bold"))+
-  geom_label_repel(data = subset(volcano,volcano$vip>=2.5&abs(volcano$foldchange)>=1),
-                   aes(label = paste("mz:",round(mz,4),sep = "")))+
+  geom_hline(aes(yintercept = 2),color = "red",size = 0.8,linetype = "dashed") +
+  geom_vline(aes(xintercept = 0),color = "red",size = 0.8,linetype = "dashed") +
+  labs(x="Log2(Fold Change)",y="VIP") +
+  # theme_minimal()
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   ggtitle("Volcano Plot")
 
 print("PLS-DA phase 1 done")
@@ -374,7 +343,7 @@ system.time(
 
 # get ROC curve using significant features
 print("Generating ROC curve using top features on training set")
-source("C:/Users/Qi/Dropbox/AIME/Archive/get_roc.R")
+source("C:/Users/QiYan/Dropbox/AIME/Archive/get_roc.R")
 roc.dataA <- t(sig.X)
 get_roc(dataA=roc.dataA,classlabels=Y,classifier="svm",kname="radial",
         rocfeatlist=seq(2,10,1),rocfeatincrement=TRUE,mainlabel="Training set ROC curve using top features")
@@ -382,7 +351,7 @@ print("ROC done")
 
 # get CV accuracy using significant features via SVM
 print("get k-fold CV accuracy")
-source("C:/Users/Qi/Dropbox/AIME/Archive/svm_cv.R")
+source("C:/Users/QiYan/Dropbox/AIME/Archive/svm_cv.R")
 xvec<-{}
 yvec<-{}
 best_acc<-0
@@ -465,7 +434,7 @@ print("PLS-DA phase 2 done")
 
 # Two-way HCA
 print("Two-way HCA")
-source("C:/Users/Qi/Dropbox/AIME/Archive/get_hca.R")
+source("C:/Users/QiYan/Dropbox/AIME/Archive/get_hca.R")
 get_hca(data_m = sig.X,classlabels = Y,is.data.znorm = FALSE,clu.method = cluster.method)
 
 # Save files
@@ -482,7 +451,7 @@ print(paste("Number of significant features:",nrow(save.plsresults.sigfeatures),
 
 save.mummichog_PLSDA_VIP2 <- save.plsresults.allfeatures[,1:4]
 save.mummichog_PLSDA_VIP2$"p-value" = 0.051
-save.mummichog_PLSDA_VIP2$`p-value`[save.mummichog_PLSDA_VIP2$vip>=vip_threshold&abs(save.mummichog_PLSDA_VIP2$foldchange)>=foldchange_threshold] <- 0.004
+save.mummichog_PLSDA_VIP2$`p-value`[save.mummichog_PLSDA_VIP2$vip>=vip_threshold&abs(save.mummichog_PLSDA_VIP2$foldchange)>=foldchange_threshold] <- 0.04
 save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[order(save.mummichog_PLSDA_VIP2$`p-value`,-save.mummichog_PLSDA_VIP2$vip),]
 save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[,c(1,2,5,4)]
 
@@ -491,9 +460,9 @@ save.mummichog_PLSDA_VIP2 <- save.mummichog_PLSDA_VIP2[,c(1,2,5,4)]
 ###################################################
 
 #PLSDA_vip2
-annotations_filename<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
-annotations_filename_2<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_HMDB.txt"
-annotations_filename_3<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_LipidMaps.txt"
+annotations_filename<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/C18neg_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
+annotations_filename_2<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/C18neg_ThermoHFQE_85to1275_mz_range/DBmatches_HMDB.txt"
+annotations_filename_3<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/C18neg_ThermoHFQE_85to1275_mz_range/DBmatches_LipidMaps.txt"
 
 number_significant_digits_rounding<-4
 
@@ -567,7 +536,7 @@ sink()
 # Create mummichog files
 
 load(filename)
-mummichog_name <- paste("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichog_input","_vip",vip_threshold,"fc",foldchange_threshold,"_",Sys.Date(),".txt",sep="")
+mummichog_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input","_vip",vip_threshold,"fc",foldchange_threshold,"_",Sys.Date(),".txt",sep="")
 write.table(save.mummichog_PLSDA_VIP2,file=mummichog_name,sep = "\t",row.names = F,quote = F)
 
 ###################################################
@@ -587,18 +556,18 @@ colnames(target_list) <- c("mz","time")
 
 dir.temp <- paste(dir.folder,"PANDA_input",sep = "")
 setwd(dir.temp)
-load(file = "HILIC_case_control_noexposure_residual_nonorm_WGCNA.RData")
+load(file = "C18_control_expo_unexpo_residual_nonorm_WGCNA.RData")
 
-target_list_name <- paste("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_metabnet_target","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
+target_list_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_metabnet_target","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
 write.table(target_list,file=target_list_name,sep = "\t",row.names = F,quote = F)
-feature_name <- paste("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_metabnet_feature","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
+feature_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_metabnet_feature","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
 write.table(wide_save_residual,file=feature_name,sep = "\t",row.names = F,quote = F)
 
 #Conduct MetabNet
 library(MetabNet)
 
 #output location
-outloc<-"C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/MetabNet/vip2fc0.58"
+outloc<-"C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/MetabNet/vip2fc0.58"
 
 allowWGCNAThreads()
 net_res<-metabnet(feature_table_file=feature_name,
@@ -616,7 +585,7 @@ net_res<-metabnet(feature_table_file=feature_name,
                   netrandseed =1106,num_nodes=6)
 
 #Retrive corelated features and save as mummichog file
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/MetabNet/vip2fc0.58/Stage2")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/MetabNet/vip2fc0.58/Stage2")
 MetabNet.sigcorr.mztime <- read.table(file = "significant_correlations_targeted_matrix_mzlabels.txt", header = T, sep = "\t")
 MetabNet.FDR <- read.table(file = "correlation_FDR.txt", header = T, sep = "\t")
 MetabNet.list <- {}
@@ -642,24 +611,29 @@ save.mummichog_MetabNet<-merge(x=save.mummichog_PLSDA_VIP2,y=MetabNet.list,by=c(
 save.mummichog_MetabNet$`p-value`[which(save.mummichog_MetabNet$flag==1)] <- 0.04
 save.mummichog_MetabNet <- save.mummichog_MetabNet[order(save.mummichog_MetabNet$`p-value`),-5]
 
-mummichog_name <- paste("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/mummichogMTBNK_input","_vip",vip_threshold,"fc",foldchange_threshold,".txt",sep="")
+mummichog_name <- paste("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichogMTBNK_input","_vip",vip_threshold,"fc",foldchange_threshold,"_",Sys.Date(),".txt",sep="")
 write.table(save.mummichog_MetabNet,file=mummichog_name,sep = "\t",row.names = F,quote = F)
+
+# save pathway_metaboanalyst file
+pathway_metaboanalyst <- save.mummichog_MetabNet[,c(1,3,4)]
+colnames(pathway_metaboanalyst) <- c("m.z","p.value","t.score")
+write.table(pathway_metaboanalyst,file="C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/pathway_metaboanalyst.txt",sep = "\t",row.names = F,quote = F)
 
 ###################################################
 ### VI. Create box plots
 ###################################################
 library(xlsx)
 
-# load comp1: unexpo vs. expo control
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_input/HILIC_control_expo_unexpo_residual3_WGCNA.RData")
-comp1.wide_save_residual <- wide_save_residual
-comp1.sampleID <- sampleID
-comp1.wide_save_residual$mz <- round(comp1.wide_save_residual$mz,4)
-comp1.wide_save_residual$time <- round(comp1.wide_save_residual$time,2)
+# load comp3: unexpo case vs. control
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Non_Exposed_CasesControls/PANDA_input/C18_case_control_noexposure_residual3_WGCNA.RData")
+comp3.wide_save_residual <- wide_save_residual
+comp3.sampleID <- sampleID
+comp3.wide_save_residual$mz <- round(comp3.wide_save_residual$mz,4)
+comp3.wide_save_residual$time <- round(comp3.wide_save_residual$time,2)
 rm(sampleID)
 rm(wide_save_residual)
 # load comp4: unexpo vs. expo case
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Cases_ExpoUnexpo/PANDA_input/HILIC_case_expo_unexpo_residual3_WGCNA.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Cases_ExpoUnexpo/PANDA_input/C18_case_expo_unexpo_residual3_WGCNA.RData")
 comp4.wide_save_residual <- wide_save_residual
 comp4.sampleID <- sampleID
 comp4.wide_save_residual$mz <- round(comp4.wide_save_residual$mz,4)
@@ -667,17 +641,19 @@ comp4.wide_save_residual$time <- round(comp4.wide_save_residual$time,2)
 rm(sampleID)
 rm(wide_save_residual)
 
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_residual3_WGCNA.RData")
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-02-26.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_control_expo_unexpo_residual3_WGCNA.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-23.RData")
 wide_save_residual$mz <- round(wide_save_residual$mz,4)
+wide_save_residual$time <- round(wide_save_residual$time,2)
 save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
+save.plsresults.sigfeatures$time <- round(save.plsresults.sigfeatures$time,2)
 
-# annotations_filename<-"C:/Users/Qi/Dropbox/AIME/PNS_Ritz/HILICpos_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
+# annotations_filename<-"C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/C18neg_ThermoHFQE_85to1275_mz_range/DBmatches_KEGG.txt"
 # a_KEGG<-read.table(annotations_filename,sep="\t",header=TRUE)
 
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichog_0113/Res_HILIC_PLSDAvip2_model4/tsv")
-mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_PLSDAvip2.xlsx",sheetName = "Sheet1")
-mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_PLSDAvip2.xlsx",sheetName = "_tentative_featurematch_")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_0113/Res_C18_PLSDAvip2_model4/tsv")
+mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_C18_PLSDAvip2.xlsx",sheetName = "Sheet1")
+mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_C18_PLSDAvip2.xlsx",sheetName = "_tentative_featurematch_")
 
 mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.05),])
 mummichog.metabID <- {}
@@ -685,12 +661,15 @@ mummichog.metabID <- strsplit(as.character(mummichog.sig.pathway$overlap_feature
 mummichog.metabmz <- {}
 mummichog.metabmz <- strsplit(as.character(mummichog.sig.pathway$used_input_mzs),";")
 
+mummichog.sig.pathway$pathway <- as.character(mummichog.sig.pathway$pathway)
+mummichog.sig.pathway$pathway[mummichog.sig.pathway$pathway=="Urea cycle/amino group metabolism"] <- "Urea cycle metabolism" # Change some pathway name since folder name cannot have /
+
 # Begin box plot
 for(i in 1:nrow(mummichog.sig.pathway)){
   pathway.name <- as.character(mummichog.sig.pathway[i,1])
   print(pathway.name)     # Obtain the name of pathways
   
-  setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Pathway Box Plots")
+  setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Pathway Box Plots")
   pdf_file<-paste(pathway.name,".pdf",sep="")
   pdf(file = pdf_file,width=10,height=10)
   
@@ -724,18 +703,18 @@ for(i in 1:nrow(mummichog.sig.pathway)){
         boxplot(Intensity~Group,data = box.expr,outline = FALSE,main=title)
         
         # Draw second comp
-        comp1.metab.expr <- comp1.wide_save_residual[which(comp1.wide_save_residual$mz==box.mz & comp1.wide_save_residual$time==box.time),]
-        comp1.box.expr <- t(comp1.metab.expr[1,-c(1,2)])
-        comp1.box.expr <- as.data.frame(cbind(comp1.box.expr,comp1.sampleID$factorcase))
-        colnames(comp1.box.expr) <- c("Intensity","Group")
-        comp1.box.expr$Intensity <- as.numeric(as.character(comp1.box.expr$Intensity))
-        comp1.box.expr$Group <- as.factor(comp1.box.expr[,2])
-        if(nrow(comp1.metab.expr)==0){
-          comp1.box.expr$Intensity=0
+        comp3.metab.expr <- comp3.wide_save_residual[which(comp3.wide_save_residual$mz==box.mz & comp3.wide_save_residual$time==box.time),]
+        comp3.box.expr <- t(comp3.metab.expr[1,-c(1,2)])
+        comp3.box.expr <- as.data.frame(cbind(comp3.box.expr,comp3.sampleID$factorcase))
+        colnames(comp3.box.expr) <- c("Intensity","Group")
+        comp3.box.expr$Intensity <- as.numeric(as.character(comp3.box.expr$Intensity))
+        comp3.box.expr$Group <- as.factor(comp3.box.expr[,2])
+        if(nrow(comp3.metab.expr)==0){
+          comp3.box.expr$Intensity=0
         }
-        boxplot(Intensity~Group,data = comp1.box.expr,outline = FALSE)
+        boxplot(Intensity~Group,data = comp3.box.expr,outline = FALSE)
         
-        # draw third comp
+        # Draw third comp
         comp4.metab.expr <- comp4.wide_save_residual[which(comp4.wide_save_residual$mz==box.mz & comp4.wide_save_residual$time==box.time),]
         comp4.box.expr <- t(comp4.metab.expr[1,-c(1,2)])
         comp4.box.expr <- as.data.frame(cbind(comp4.box.expr,comp4.sampleID$factorcase))
@@ -757,21 +736,22 @@ for(i in 1:nrow(mummichog.sig.pathway)){
 ###################################################
 library(xlsx)
 
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_all_residual.RData")
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-05-01_vip2fc0.58.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_all_residual.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-04-30_vip2fc0.58.RData")
 wide_save_residual$mz <- round(wide_save_residual$mz,4)
 wide_save_residual$time <- round(wide_save_residual$time,2)
 save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
+save.plsresults.sigfeatures$time <- round(save.plsresults.sigfeatures$time,2)
 
 sampleID <- class
 rm(class)
 sampleID$factorcase <- paste(sampleID$casecontrol..Factor.1.,sampleID$Exposure_category..Factor2.,sep = "")
 
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
-mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
-mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "_tentative_featurematch_")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichogMTBNK_vip2fc0.58/tsv")
+mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_C18_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
+mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_C18_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "_tentative_featurematch_")
 
-mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.05),])
+mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.06),]) ## not enough pathways, so losen the p value
 mummichog.metabID <- {}
 mummichog.metabID <- strsplit(as.character(mummichog.sig.pathway$overlap_features..id.),";")
 mummichog.metabmz <- {}
@@ -785,7 +765,7 @@ for(i in 1:nrow(mummichog.sig.pathway)){
   pathway.name <- as.character(mummichog.sig.pathway[i,1])
   print(pathway.name)     # Obtain the name of pathways
   
-  setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Pathway Box Plots")
+  setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Pathway Box Plots")
   pdf_file<-paste(pathway.name,".pdf",sep="")
   pdf(file = pdf_file,width=10,height=10)
   
@@ -810,7 +790,6 @@ for(i in 1:nrow(mummichog.sig.pathway)){
         if(nrow(box.expr)==0){
           next
         }                                                 # Some metabolites can be found in saave.sigfeatures but not wide.save.residula for all subjects, that's because it might be missing > 80% in other groups and discard during preprocess
-        
         box.expr <- t(box.expr[1,-c(1,2)])
         box.expr <- as.data.frame(cbind(box.expr,sampleID$factorcase))
         colnames(box.expr) <- c("Intensity","Group")
@@ -828,9 +807,9 @@ for(i in 1:nrow(mummichog.sig.pathway)){
 #################
 # Plot modules
 #################
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
-mummichog.sig.module <- read.xlsx("mcg_modularanalysis_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
-mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "_tentative_featurematch_")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichogMTBNK_vip2fc0.58/tsv")
+mummichog.sig.module <- read.xlsx("mcg_modularanalysis_C18_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
+mummichog.MatchMetab <- read.xlsx("_tentative_featurematch_C18_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "_tentative_featurematch_")
 
 mummichog.metabID <- {}
 mummichog.metabID <- strsplit(as.character(mummichog.sig.module$members..id.),",")
@@ -842,7 +821,7 @@ for(i in 1:nrow(mummichog.sig.module)){
   module.name <- as.character(mummichog.sig.module[i,1])
   print(module.name)     # Obtain the name of modules
   
-  setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/pathway Box Plots")
+  setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/pathway Box Plots")
   pdf_file<-paste(module.name,".pdf",sep="")
   pdf(file = pdf_file,width=10,height=10)
   
@@ -882,354 +861,142 @@ for(i in 1:nrow(mummichog.sig.module)){
   dev.off()
 }
 
+
 ###################################################
 ### VII. Metaboanalyst
 ###################################################
 
 library(xlsx)
 
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_control_expo_unexpo_classification_nonorm.RData")
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_control_expo_unexpo_residual_nonorm_WGCNA.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_control_expo_unexpo_classification_nonorm.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_input/C18_control_expo_unexpo_residual_nonorm_WGCNA.RData")
 
 row.names(wide_save_residual) <- paste("met_",1:nrow(wide_save_residual),sep = "")
 feature <- cbind(sampleID[,c(1:2)],t(wide_save_residual[,-c(1:2)]))
-write.table(feature,file="C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/metaboanalyst.txt",sep = "\t",row.names = F,quote = F)
+write.table(feature,file="C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/metaboanalyst.txt",sep = "\t",row.names = F,quote = F)
 
-metaboanalyst.sig <- read.csv("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/imp_features_cv.csv")
+metaboanalyst.sig <- read.csv("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/imp_features_cv.csv")
 after.prepro.linkid$X <- row.names(after.prepro.linkid)
 metaboanalyst.sig_cov <- merge(after.prepro.linkid,metaboanalyst.sig, by = "X")
 metaboanalyst.sig_cov <- metaboanalyst.sig_cov[order(-metaboanalyst.sig_cov$Importance),]
 
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-23.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-23.RData")
 temp <- save.plsresults.sigfeatures[,c(1,6)]
 check.cons <- merge(temp,metaboanalyst.sig_cov,by = "mz")
 check.cons <- check.cons[order(check.cons$rank),]
 
-# Map pathway metabolites to KEGG
-setwd("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_mummichog/HILIC_mummichogMTBNK_vip2fc0.58/tsv")
-mummichog.pathway <- read.xlsx("mcg_pathwayanalysis_HILIC_mummichogMTBNK_vip2fc0.58.xlsx",sheetName = "Sheet1")
-
-mummichog.sig.pathway <-as.data.frame(mummichog.pathway[which(as.numeric(as.character(mummichog.pathway$p.value)) <= 0.05),])
-mummichog.metabID <- {}
-mummichog.metabID <- strsplit(as.character(mummichog.sig.pathway$overlap_features..id.),";")
-metabID <- unique(unlist(mummichog.metabID))
-metabID <- as.data.frame(metabID)
-metabID$color <- "black"
-
-
 ###################################################
-### VIII. Re-annotate significant features with loose adducts
+### VIII. Activity network for cytoscape/KEGG mapper
 ###################################################
-library(xMSannotator)
 
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_input/HILIC_case_control_noexposure_residual3_WGCNA.RData")
-load("C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/PANDA_output_PLSDA/Res_PLSDA_result_2018-01-22.RData")
+# Network
 
-data(adduct_table)
-data(adduct_weights)
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-04-30_vip2fc0.58.RData")
+save.plsresults.allfeatures$mz <- round(save.plsresults.allfeatures$mz,4)
+save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
 
-###########Parameters to change##############
-#dataA<-read.table("/Users/Projects/xMSannotator/test_data.txt",sep="\t",header=TRUE)
-input_data <- save.plsresults.sigfeatures[,-c(3:6)]
-dataA<-input_data
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichogMTBNK_vip2fc0.58/tsv")
+mummichog.NetAct <- read.xlsx("InspectedNodes_ActivityNetwork.xlsx",sheetName = "Sheet1")
+mummichog.NetAct$number <- c(1:nrow(mummichog.NetAct))
+mummichog.NetAct <- merge(mummichog.NetAct,save.plsresults.allfeatures,by = "mz", all.x = TRUE)
+mummichog.NetAct <- mummichog.NetAct[order(mummichog.NetAct$number),1:6]
 
-outloc<-"C:/Users/Qi/Dropbox/AIME/Panda_HILICpos/HILIC_Non_Exposed_CasesControls/HILIC_Annotation/sigfeature_annotation"
+mummichog.NetAct <- merge(mummichog.NetAct,save.plsresults.sigfeatures,by = "mz", all.x = TRUE)
+mummichog.NetAct <- mummichog.NetAct[order(mummichog.NetAct$number),c(1:6,11)]
 
-max.mz.diff<-10  #mass search tolerance for DB matching in ppm
-max.rt.diff<-10 #retention time tolerance between adducts/isotopes
-corthresh<-0.7 #correlation threshold between adducts/isotopes
-max_isp=5 #maximum number of isotopes to search for
-mass_defect_window=0.01 #mass defect window for isotope search
+mummichog.cor <- read.table("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichogMTBNK_input_vip2fc0.58.txt",sep = "\t",header = TRUE)
+mummichog.cor <- mummichog.cor[which(mummichog.cor$p.value == 0.04),]
+mummichog.cor$mz <- round(mummichog.cor$mz,4)
+mummichog.NetAct <- merge(mummichog.NetAct,mummichog.cor,by = "mz", all.x = TRUE)
+mummichog.NetAct <- mummichog.NetAct[order(mummichog.NetAct$number),c(1:7,9)]
 
-num_nodes<-2   #number of cores to be used; 2 is recommended for desktop computers due to high memory consumption
+# Pathways
 
-db_name="KEGG" #other options: HMDB,Custom,KEGG, LipidMaps, T3DB
-status="Detected and Quantified" #other options: "Detected", NA, "Detected and Quantified", "Expected and Not Quantified"
-num_sets<-300 #number of sets into which the total number of database entries should be split into;
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-05-31_vip2fc0.RData")
+save.plsresults.allfeatures$mz <- round(save.plsresults.allfeatures$mz,4)
+save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
 
-mode<-"pos" #ionization mode
-# queryadductlist=c("M+H","M+2H","M+H+NH4","M+ACN+2H","M+2ACN+2H","M+NH4","M+Na","M+ACN+H","M+ACN+Na","M+2ACN+H","2M+H","2M+Na","2M+ACN+H","M+2Na-H","M+H-H2O","M+H-2H2O") #other options: c("M-H","M-H2O-H","M+Na-2H","M+Cl","M+FA-H"); c("positive"); c("negative"); c("all");see data(adduct_table) for complete list
-queryadductlist=c("all")
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0531/tsv")
+mummichog.PatAct <- read.xlsx("mcg_pathwayanalysis_C18_mummichog_vip2fc0_0531.xlsx",sheetName = "Sheet1",header = TRUE)
+# mummichog.PatAct <- mummichog.PatAct[,c(5,1,2)]
+# colnames(mummichog.PatAct) <- c("name","mz","id")
+colnames(mummichog.PatAct) <- c("mz","id","match.form","mz_difference","name","pathway")
+mummichog.PatAct$number <- c(1:nrow(mummichog.PatAct))
+mummichog.PatAct <- merge(mummichog.PatAct,save.plsresults.allfeatures,by = "mz", all.x = TRUE)
+mummichog.PatAct <- mummichog.PatAct[order(mummichog.PatAct$number),1:10]
 
-#provide list of database IDs (depending upon selected database) for annotating only specific metabolites
-customIDs<-NA #c("HMDB15352","HMDB60549","HMDB00159","HMDB00222"); read.csv("/Users/mzmatch_95stdmx_HMDBIDs.csv")
-customDB<-NA 
+mummichog.PatAct <- merge(mummichog.PatAct,save.plsresults.sigfeatures,by = "mz", all.x = TRUE)
+mummichog.PatAct <- mummichog.PatAct[order(mummichog.PatAct$number),c(1:7,15)]
 
-#########################
+mummichog.cor <- read.table("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",sep = "\t",header = TRUE)
+mummichog.cor <- mummichog.cor[which(mummichog.cor$p.value == 0.004),]
+mummichog.cor$mz <- round(mummichog.cor$mz,4)
+mummichog.PatAct <- merge(mummichog.PatAct,mummichog.cor,by = "mz", all.x = TRUE)
+mummichog.PatAct <- mummichog.PatAct[order(mummichog.PatAct$number),c(1:8,11)]
 
-dataA<-unique(dataA)
-print(dim(dataA))
-print(format(Sys.time(), "%a %b %d %X %Y"))
+mummichog.PatAct <- mummichog.PatAct[-which(is.na(mummichog.PatAct$rank)),]
+mummichog.PatAct <- mummichog.PatAct[-which(duplicated(mummichog.PatAct$id)),]
+mummichog.PatAct$color[mummichog.PatAct$foldchange > 0] <- "red"
+mummichog.PatAct$color[mummichog.PatAct$foldchange < 0] <- "green"
+for.kegg <- mummichog.PatAct[,c(2,10)]
 
-system.time(annotres<-multilevelannotation(dataA=dataA,max.mz.diff=max.mz.diff,max.rt.diff=max.rt.diff,cormethod="pearson",num_nodes=num_nodes,queryadductlist=queryadductlist,
-                                           mode=mode,outloc=outloc,db_name=db_name, adduct_weights=adduct_weights,num_sets=num_sets,allsteps=TRUE,
-                                           corthresh=corthresh,NOPS_check=TRUE,customIDs=customIDs,missing.value=NA,deepsplit=2,networktype="unsigned",
-                                           minclustsize=10,module.merge.dissimilarity=0.2,filter.by=c("M+H"),biofluid.location=NA,origin=NA,status=status,boostIDs=NA,max_isp=max_isp,
-                                           customDB=customDB,
-                                           HMDBselect="union",mass_defect_window=mass_defect_window,pathwaycheckmode="pm",mass_defect_mode="pos")
-)
+# add HILIC
 
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-05-31_vip2fc0.RData")
+save.plsresults.allfeatures$mz <- round(save.plsresults.allfeatures$mz,4)
+save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
 
-print(format(Sys.time(), "%a %b %d %X %Y"))
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/HILIC_mummichog_vip2fc0_0531/tsv")
+HILIC.mummichog.PatAct <- read.xlsx("mcg_pathwayanalysis_HILIC_mummichog_vip2fc0_0531.xlsx",sheetName = "Sheet1",header = TRUE)
+# HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[,c(5,1,2)]
+# colnames(HILIC.mummichog.PatAct) <- c("name","mz","id")
+colnames(HILIC.mummichog.PatAct) <- c("mz","id","match.form","mz_difference","name","pathway")
+HILIC.mummichog.PatAct$number <- c(1:nrow(HILIC.mummichog.PatAct))
+HILIC.mummichog.PatAct <- merge(HILIC.mummichog.PatAct,save.plsresults.allfeatures,by = "mz", all.x = TRUE)
+HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[order(HILIC.mummichog.PatAct$number),1:10]
 
-pkg <- "package:xMSannotator"
-detach(pkg, character.only = TRUE)
+HILIC.mummichog.PatAct <- merge(HILIC.mummichog.PatAct,save.plsresults.sigfeatures,by = "mz", all.x = TRUE)
+HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[order(HILIC.mummichog.PatAct$number),c(1:7,15)]
 
-###################################################
-### IX. Get demographic distributions
-###################################################
-demo <- apply(sampleID[-c(1,2,8)], 2, function(x) table(x, by = sampleID$factorcase))
-demo
-for(i in 3:length(demo)){
-  fit <- fisher.test(demo[[i]])
-  print(paste(names(demo)[i],fit$p.value,sep = ":"))
-}
+HILIC.mummichog.cor <- read.table("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",sep = "\t",header = TRUE)
+HILIC.mummichog.cor <- HILIC.mummichog.cor[which(HILIC.mummichog.cor$p.value == 0.004),]
+HILIC.mummichog.cor$mz <- round(HILIC.mummichog.cor$mz,4)
+HILIC.mummichog.PatAct <- merge(HILIC.mummichog.PatAct,HILIC.mummichog.cor,by = "mz", all.x = TRUE)
+HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[order(HILIC.mummichog.PatAct$number),c(1:8,11)]
 
+HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[-which(is.na(HILIC.mummichog.PatAct$rank)),]
+HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[-which(duplicated(HILIC.mummichog.PatAct$id)),]
+HILIC.mummichog.PatAct$color[HILIC.mummichog.PatAct$foldchange > 0] <- "red"
+HILIC.mummichog.PatAct$color[HILIC.mummichog.PatAct$foldchange < 0] <- "green"
 
-###################################################
-### X. Linear regression for covariates and exposure 
-###################################################
-crude <- function(cov){
-  fit <- glm(as.factor(factorcase) ~ as.factor(sampleID[,cov]), data = sampleID, family = binomial())
-  summary(fit)
-  # exp(cbind(OR = coef(fit), confint(fit)))
-}
-crude("sex")
-crude("birthyear")
-crude("maternal_age")
-crude("maternal_raceeth")
+# Combined HILIC and C18 pathways together
+mummichog.PatAct <- rbind(mummichog.PatAct, HILIC.mummichog.PatAct)
 
-fit <- glm(as.factor(factorcase) ~ as.factor(sex)+as.factor(birthyear)+as.factor(maternal_age)+
-             as.factor(maternal_raceeth)+as.factor(maternal_edu)+as.factor(pregcompl)+as.factor(usborn), data = sampleID, family = binomial(link = "logit"))
-summary(fit)
-exp(cbind(OR = coef(fit), confint(fit)))
+# Draw pathway plots
+source("C:/Users/QiYan/Dropbox/AIME/Archive/pathway_Plotly.R")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Fatty acid activation")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "De novo fatty acid biosynthesis")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Fatty Acid Metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Butanoate metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Linoleate metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Lysine metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Methionine and cysteine metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Glycolysis and Gluconeogenesis")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Prostaglandin formation from arachidonate")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Vitamin E metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Glycerophospholipid metabolism")
 
-# ###################################################
-# ### code chunk number 11: PLSDA-analysis.Rnw:267-285 (eval = FALSE)
-# ###################################################
-# ## # run internally and saved
-# ## 
-# ## set.seed(2543) # for reproducibility
-# ## # grid of possible keepX values that will be tested for each component
-# ## list.keepX <- c(1:10,  seq(20, 300, 10))  
-# ## 
-# ## t1 = proc.time()  
-# ## tune.splsda.datExpr <- tune.splsda(X, Y, ncomp = 6, validation = 'Mfold', folds = 5, 
-# ##                            progressBar = FALSE, dist = 'max.dist', measure = "BER",
-# ##                           test.keepX = list.keepX, nrepeat = 10)#, cpus = 2)
-# ## t2 = proc.time()
-# ## running_time = t2 - t1; running_time # running time
-# ## 
-# ## error <- tune.splsda.datExpr$error.rate
-# ## ncomp <- tune.splsda.datExpr$choice.ncomp$ncomp
-# ## select.keepX <- tune.splsda.datExpr$choice.keepX[1:ncomp]
-# ## 
-# ## save(tune.splsda.datExpr, ncomp, list.keepX, error, select.keepX, running_time,  file = 'RData/result-datExpr-sPLSDA.RData')
-# 
-# 
-# ###################################################
-# ### code chunk number 12: PLSDA-analysis.Rnw:288-289
-# ###################################################
-# load('RData/result-datExpr-sPLSDA.Rdata')
-# 
-# 
-# ###################################################
-# ### code chunk number 13: PLSDA-analysis.Rnw:292-302 (eval = FALSE)
-# ###################################################
-# ## set.seed(2543) # for reproducibility
-# ## # grid of possible keepX values that will be tested for each component
-# ## list.keepX <- c(1:10,  seq(20, 300, 10))
-# ## 
-# ## t1 = proc.time()  
-# ## tune.splsda.datExpr <- tune.splsda(X, Y, ncomp = 6, validation = 'Mfold', folds = 5, 
-# ##                            progressBar = TRUE, dist = 'max.dist', measure = "BER",
-# ##                           test.keepX = list.keepX, nrepeat = 10)
-# ## t2 = proc.time()
-# ## running_time = t2 - t1; running_time # running time
-# 
-# 
-# ###################################################
-# ### code chunk number 14: PLSDA-analysis.Rnw:305-306
-# ###################################################
-# running_time
-# 
-# 
-# ###################################################
-# ### code chunk number 15: PLSDA-analysis.Rnw:309-310 (eval = FALSE)
-# ###################################################
-# ## error <- tune.splsda.datExpr$error.rate  # error rate per component for the keepX grid
-# 
-# 
-# ###################################################
-# ### code chunk number 16: PLSDA-analysis.Rnw:314-316 (eval = FALSE)
-# ###################################################
-# ## ncomp <- tune.splsda.datExpr$choice.ncomp$ncomp # optimal number of components based on t-tests
-# ## ncomp
-# 
-# 
-# ###################################################
-# ### code chunk number 17: PLSDA-analysis.Rnw:319-320
-# ###################################################
-# ncomp
-# 
-# 
-# ###################################################
-# ### code chunk number 18: PLSDA-analysis.Rnw:324-326 (eval = FALSE)
-# ###################################################
-# ## select.keepX <- tune.splsda.datExpr$choice.keepX[1:ncomp]  # optimal number of variables to select
-# ## select.keepX
-# 
-# 
-# ###################################################
-# ### code chunk number 19: PLSDA-analysis.Rnw:328-329
-# ###################################################
-# select.keepX
-# 
-# 
-# ###################################################
-# ### code chunk number 20: PLSDA-analysis.Rnw:337-338
-# ###################################################
-# plot(tune.splsda.datExpr, col = color.jet(6))
-# 
-# 
-# ###################################################
-# ### code chunk number 21: PLSDA-analysis.Rnw:347-348
-# ###################################################
-# splsda.datExpr <- splsda(X, Y, ncomp = ncomp, keepX = select.keepX) 
-# 
-# 
-# ###################################################
-# ### code chunk number 22: PLSDA-analysis.Rnw:354-358
-# ###################################################
-# plotIndiv(splsda.datExpr, comp = c(1,2),
-#           group = srbct$class, ind.names = FALSE, 
-#           ellipse = TRUE, legend = TRUE,
-#           title = 'sPLS-DA on datExpr, comp 1 & 2')
-# 
-# 
-# ###################################################
-# ### code chunk number 23: PLSDA-analysis.Rnw:365-369
-# ###################################################
-# plotIndiv(splsda.datExpr, comp = c(1,3),
-#           group = srbct$class, ind.names = FALSE, 
-#           ellipse = TRUE, legend = TRUE,
-#           title = 'sPLS-DA on datExpr, comp 1 & 3')
-# 
-# 
-# ###################################################
-# ### code chunk number 24: PLSDA-analysis.Rnw:377-378
-# ###################################################
-# auc.splsda = auroc(splsda.datExpr, roc.comp = 2)
-# 
-# 
-# ###################################################
-# ### code chunk number 25: PLSDA-analysis.Rnw:383-384
-# ###################################################
-# auc.splsda = auroc(splsda.datExpr, roc.comp = ncomp)
-# 
-# 
-# ###################################################
-# ### code chunk number 26: PLSDA-analysis.Rnw:390-398
-# ###################################################
-# set.seed(40) # for reproducibility, only when the `cpus' argument is not used
-# 
-# t1 = proc.time()  
-# perf.datExpr <- perf(splsda.datExpr, validation = "Mfold", folds = 5,
-#                    dist = 'max.dist', nrepeat = 10,
-#                    progressBar = FALSE) 
-# t2 = proc.time()
-# running_time = t2 - t1; running_time
-# 
-# 
-# ###################################################
-# ### code chunk number 27: PLSDA-analysis.Rnw:402-405
-# ###################################################
-# # perf.datExpr  # lists the different outputs
-# perf.datExpr$error.rate
-# plot(perf.datExpr, col = color.mixo(5))
-# 
-# 
-# ###################################################
-# ### code chunk number 28: PLSDA-analysis.Rnw:412-420
-# ###################################################
-# par(mfrow=c(1,3))
-# plot(perf.datExpr$features$stable[[1]], type = 'h', ylab = 'Stability', 
-#      xlab = 'Features', main = 'Comp 1', las =2)
-# plot(perf.datExpr$features$stable[[2]], type = 'h', ylab = 'Stability', 
-#      xlab = 'Features', main = 'Comp 2', las =2)
-# plot(perf.datExpr$features$stable[[3]], type = 'h', ylab = 'Stability', 
-#      xlab = 'Features', main = 'Comp 3', las =2)
-# par(mfrow=c(1,1))
-# 
-# 
-# ###################################################
-# ### code chunk number 29: PLSDA-analysis.Rnw:426-433
-# ###################################################
-# # here we match the selected variables to the stable features
-# ind.match = match(selectVar(splsda.datExpr, comp = 1)$name, 
-#                   names(perf.datExpr$features$stable[[1]]))
-# #extract the frequency of selection of those selected variables
-# Freq = as.numeric(perf.datExpr$features$stable[[1]][ind.match])
-# 
-# data.frame(selectVar(splsda.datExpr, comp = 1)$value, Freq)
-# 
-# 
-# ###################################################
-# ### code chunk number 30: PLSDA-analysis.Rnw:440-442
-# ###################################################
-# plotLoadings(splsda.datExpr, comp = 1, title = 'Loadings on comp 1', 
-#              contrib = 'max', method = 'mean')
-# 
-# 
-# ###################################################
-# ### code chunk number 31: PLSDA-analysis.Rnw:446-448
-# ###################################################
-# plotLoadings(splsda.datExpr, comp = 2, title = 'Loadings on comp 2', 
-#              contrib = 'max', method = 'mean')
-# 
-# 
-# ###################################################
-# ### code chunk number 32: PLSDA-analysis.Rnw:451-453
-# ###################################################
-# plotLoadings(splsda.datExpr, comp = 3, title = 'Loadings on comp 3', 
-#              contrib = 'max', method = 'mean')
-# 
-# 
-# ###################################################
-# ### code chunk number 33: PLSDA-analysis.Rnw:459-461
-# ###################################################
-# plotLoadings(splsda.datExpr, comp = 1, title = 'Loadings on comp 1', 
-#              contrib = 'min', method = 'mean')
-# 
-# 
-# ###################################################
-# ### code chunk number 34: PLSDA-analysis.Rnw:467-468
-# ###################################################
-# cim(splsda.datExpr)
-# 
-# 
-# ###################################################
-# ### code chunk number 35: PLSDA-analysis.Rnw:471-472
-# ###################################################
-# cim(splsda.datExpr, comp=1, title ="Component 1")
-# 
-# 
-# ###################################################
-# ### code chunk number 36: PLSDA-analysis.Rnw:478-479
-# ###################################################
-# plotArrow(splsda.datExpr, legend=T)
-# 
-# 
-# ###################################################
-# ### code chunk number 37: PLSDA-analysis.Rnw:488-489
-# ###################################################
-# sessionInfo()
-# 
-# 
-# ###################################################
-# ### code chunk number 38: PLSDA-analysis.Rnw:493-495
-# ###################################################
-# # the end of that chapter. Command not to be run
-# Stangle('PLSDA-analysis.Rnw', encoding = 'utf8')
-# 
-# 
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Urea cycle/amino group metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Glycosphingolipid metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Pyrimidine metabolism")
+pathway_Plotly(data = mummichog.PatAct, pathway_name = "Leukotriene metabolism")
+
+# Use pathview to draw KEGG pathways
+cmp.list <- mummichog.PatAct$foldchange
+names(cmp.list) <- mummichog.PatAct$id
+
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0531")
+pv.out <- pathview(cpd.data = cmp.list,
+                   pathway.id = '01100', species = "hsa", keys.align = "y", kegg.native = TRUE, res = 1000, bins = 80,
+                   plot.col.key = FALSE, new.signature = FALSE,
+                   low = list(gene = "blue", cpd = "green"), high = list(gene = "yellow", cpd ="red"))
