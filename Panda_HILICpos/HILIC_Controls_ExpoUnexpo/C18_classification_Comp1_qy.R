@@ -3,6 +3,7 @@ library(mixOmics)
 library(e1071)
 library(ROCR)
 library(RColorBrewer)
+library(ggrepel)
 # library(caret)
 
 #################################
@@ -81,6 +82,8 @@ if(is.residual == FALSE){
   # X <- after.prepro.feature
   # linkid <- after.prepro.linkid
   load("C18_control_expo_unexpo_raw.RData")
+  # remove outliers   #################################
+  # feature <- feature[,-which(colnames(feature)=="M2249033_VS100001F16757_2")]
   row.names(feature) <- c(paste("met_",1:nrow(feature),sep = ""))
   linkid <- feature[,1:2]
   X <- t(as.matrix(feature[,-c(1:2)]))
@@ -165,17 +168,17 @@ plotIndiv(datExpr.plsda, comp = 1:2,
 # Assess the preformance of PLSDA, tuning, select number of component
 print("Optimize number of component if necessary")
 if (optimal_comp == TRUE){
-set.seed(1106)
-system.time(
-perf.plsda.datExpr <- perf(datExpr.plsda, validation = "Mfold", folds = fold_cv,   ## 5 fold CV
-                  progressBar = TRUE, auc = TRUE, nrepeat = nrepeat, cpus = cpu)
-)
-plot(perf.plsda.datExpr, col = color.mixo(5:7), sd = TRUE, legend.position = "horizontal")
-
-error_rate <- as.data.frame(perf.plsda.datExpr$error.rate$BER)
-num_comp <- rownames(error_rate)[which.min(apply(error_rate,MARGIN=1,min))]
-dist_method <- as.numeric(which.min(apply(error_rate,MARGIN=2,min)))
-# if (optimal_comp == TRUE){
+  set.seed(1106)
+  system.time(
+    perf.plsda.datExpr <- perf(datExpr.plsda, validation = "Mfold", folds = fold_cv,   ## 5 fold CV
+                               progressBar = TRUE, auc = TRUE, nrepeat = nrepeat, cpus = cpu)
+  )
+  plot(perf.plsda.datExpr, col = color.mixo(5:7), sd = TRUE, legend.position = "horizontal")
+  
+  error_rate <- as.data.frame(perf.plsda.datExpr$error.rate$BER)
+  num_comp <- rownames(error_rate)[which.min(apply(error_rate,MARGIN=1,min))]
+  dist_method <- as.numeric(which.min(apply(error_rate,MARGIN=2,min)))
+  # if (optimal_comp == TRUE){
   opt_comp = as.numeric(perf.plsda.datExpr$choice.ncomp[2,dist_method])
 }else{
   opt_comp = components
@@ -265,40 +268,70 @@ vip.for.selection$group[vip.for.selection$vip >= vip_threshold & vip.for.selecti
 ggplot2::ggplot(vip.for.selection,aes(x=mz,y=vip)) +
   geom_point(aes(colour = cut(group, c(-Inf,0,1,2,Inf))),size=1,show.legend = FALSE) + 
   scale_fill_hue(c=20, l=20) + 
-  scale_color_manual(values = c("#999999","#66CC99","#CC6666")) +
-  geom_hline(aes(yintercept = 2),color = "red",size = 1,linetype = "dashed") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  labs(x="M/Z",y="VIP") +
-  ggtitle("Type 1 manhattan plot (VIP vs mz)
-          red: lower in class case & green: higher in class case")
+  scale_color_manual(values = c("#999999","springgreen3","firebrick1")) +
+  geom_hline(aes(yintercept = 2),color = "red",size = 0.5,linetype = "dashed") +
+  scale_x_continuous(breaks = pretty(vip.for.selection$mz, n = 10))+
+  scale_y_continuous(breaks = pretty(vip.for.selection$vip, n = 10))+
+  # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme_bw(base_size = 12)+
+  theme(axis.text=element_text(face="bold"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        plot.title = element_text(size=12, face="bold"),
+        axis.title.x = element_text(size=12, face="bold"),
+        axis.title.y = element_text(size=12, face="bold"))+
+  labs(x="M/Z",y="VIP Score") +
+  ggtitle("Type 1 manhattan plot (VIP vs mz)")
 
 ggplot2::ggplot(vip.for.selection,aes(x=time,y=vip)) +
   geom_point(aes(colour = cut(group, c(-Inf,0,1,2,Inf))),size=1,show.legend = FALSE) + 
   scale_fill_hue(c=20, l=20) + 
-  scale_color_manual(values = c("#999999","#66CC99","#CC6666")) +
-  geom_hline(aes(yintercept = 2),color = "red",size = 1,linetype = "dashed") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  labs(x="Retention Time",y="VIP") +
-  ggtitle("Type 2 manhattan plot (VIP vs retention time)
-          green: lower in class case & red: higher in class case")
+  scale_color_manual(values = c("#999999","springgreen3","firebrick1")) +
+  geom_hline(aes(yintercept = 2),color = "red",size = 0.5,linetype = "dashed") +
+  scale_x_continuous(breaks = pretty(vip.for.selection$time, n = 10))+
+  scale_y_continuous(breaks = pretty(vip.for.selection$vip, n = 10))+
+  # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme_bw(base_size = 12)+
+  theme(axis.text=element_text(face="bold"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        plot.title = element_text(size=12, face="bold"),
+        axis.title.x = element_text(size=12, face="bold"),
+        axis.title.y = element_text(size=12, face="bold"))+
+  labs(x="Retention Time",y="VIP Score") +
+  ggtitle("Type 2 manhattan plot (VIP vs retention time)")
 
+# volcano <- vip.for.selection[,c(1:4)]
+# volcano$group <- ifelse(volcano$vip>=vip_threshold&volcano$foldchange>=foldchange_threshold,2,
+#                         ifelse(volcano$vip>=vip_threshold&volcano$foldchange<=-foldchange_threshold,1,0))
+# volcano$size <- ifelse(volcano$group == 0,0,1)
 
 volcano <- vip.for.selection[,c(1:4)]
-volcano$group <- ifelse(volcano$vip>=vip_threshold&volcano$foldchange>=foldchange_threshold,2,
-                        ifelse(volcano$vip>=vip_threshold&volcano$foldchange<=-foldchange_threshold,1,0))
+volcano$group <- ifelse(volcano$vip>=vip_threshold&volcano$foldchange>=1,3,
+                        ifelse(volcano$vip>=vip_threshold&volcano$foldchange<=-1,2,
+                               ifelse(volcano$vip>=vip_threshold&abs(volcano$foldchange)<=1,1,0)))
 volcano$size <- ifelse(volcano$group == 0,0,1)
 
 ggplot2::ggplot(volcano,aes(x=foldchange,y=vip)) +
-  geom_point(aes(colour=cut(group, c(-Inf,0,1,2,Inf)),size=size),show.legend = FALSE) + 
+  geom_point(aes(colour=cut(group, c(-Inf,0,1,2,Inf))),show.legend = FALSE) + 
   xlim(-3.8,3.8) +
   scale_fill_hue(c=20, l=20) + 
-  scale_color_manual(values = c("#999999","#66CC99","#CC6666")) + 
+  scale_color_manual(values = c("#999999","goldenrod3","springgreen3","firebrick1")) + 
   scale_size_continuous(range = c(1,3)) +
-  geom_hline(aes(yintercept = 2),color = "red",size = 0.8,linetype = "dashed") +
-  geom_vline(aes(xintercept = 0),color = "red",size = 0.8,linetype = "dashed") +
-  labs(x="Log2(Fold Change)",y="VIP") +
-  # theme_minimal()
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  geom_hline(aes(yintercept = 2),color = "black",size = 0.5,linetype = "dashed") +
+  geom_vline(aes(xintercept = 1),color = "black",size = 0.5,linetype = "dashed") +
+  geom_vline(aes(xintercept = -1),color = "black",size = 0.5,linetype = "dashed") +
+  labs(x="Log2(Fold Change)",y="VIP Score") +
+  # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme_bw(base_size = 12)+
+  theme(axis.text=element_text(face="bold"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        plot.title = element_text(size=12, face="bold"),
+        axis.title.x = element_text(size=12, face="bold"),
+        axis.title.y = element_text(size=12, face="bold"))+
+  geom_label_repel(data = subset(volcano,volcano$vip>=2.5&abs(volcano$foldchange)>=1.5),
+                   aes(label = paste("mz:",round(mz,4),sep = "")))+
   ggtitle("Volcano Plot")
 
 print("PLS-DA phase 1 done")
@@ -338,7 +371,7 @@ print("Assess the preformance")
 set.seed(1106)
 system.time(
   sig.perf.plsda.datExpr <- perf(sig.datExpr.plsda, validation = "Mfold", folds = fold_cv,   ## 5 fold CV
-                           progressBar = TRUE, auc = TRUE, nrepeat = nrepeat, cpus = cpu)
+                                 progressBar = TRUE, auc = TRUE, nrepeat = nrepeat, cpus = cpu)
 )
 
 # get ROC curve using significant features
@@ -361,31 +394,31 @@ for(i in 2:nrow(roc.dataA)){
                         errortype=pred.eval.method,conflevel=95))
   if(is(svm_model,"try-error")){
     svm_model<-NA
-    }else{
-      xvec<-c(xvec,i)
-      yvec<-c(yvec,svm_model$avg_acc)
-      if(svm_model$avg_acc>best_acc){
+  }else{
+    xvec<-c(xvec,i)
+    yvec<-c(yvec,svm_model$avg_acc)
+    if(svm_model$avg_acc>best_acc){
       best_acc<-svm_model$avg_acc
       best_subset<-seq(1,i)
-      }
-      if(svm_model$avg_acc<best_acc){
-        diff_acc<-best_acc-svm_model$avg_acc
-        if(diff_acc>50){
-          break;
-        }
+    }
+    if(svm_model$avg_acc<best_acc){
+      diff_acc<-best_acc-svm_model$avg_acc
+      if(diff_acc>50){
+        break;
       }
     }
   }
+}
 
 if(pred.eval.method=="CV"){
   ylab_text=paste(pred.eval.method," accuracy (%)",sep="")
+}else{
+  if(pred.eval.method=="BER"){
+    ylab_text=paste("Balanced accuracy"," (%)",sep="")
   }else{
-    if(pred.eval.method=="BER"){
-      ylab_text=paste("Balanced accuracy"," (%)",sep="")
-      }else{
-        ylab_text=paste("AUC"," (%)",sep="")
-      }
-    }
+    ylab_text=paste("AUC"," (%)",sep="")
+  }
+}
 print(length(yvec))
 print(length(xvec))
 print(xvec)
@@ -912,12 +945,12 @@ mummichog.NetAct <- mummichog.NetAct[order(mummichog.NetAct$number),c(1:7,9)]
 
 # Pathways
 
-load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-05-31_vip2fc0.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-08-19_vip2fc0.RData")
 save.plsresults.allfeatures$mz <- round(save.plsresults.allfeatures$mz,4)
 save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
 
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0531/tsv")
-mummichog.PatAct <- read.xlsx("mcg_pathwayanalysis_C18_mummichog_vip2fc0_0531.xlsx",sheetName = "Sheet1",header = TRUE)
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0820_major/tsv")
+mummichog.PatAct <- read.xlsx("mcg_pathwayanalysis_C18_mummichog_vip2fc0_0820.xlsx",sheetName = "Sheet1",header = TRUE)
 # mummichog.PatAct <- mummichog.PatAct[,c(5,1,2)]
 # colnames(mummichog.PatAct) <- c("name","mz","id")
 colnames(mummichog.PatAct) <- c("mz","id","match.form","mz_difference","name","pathway")
@@ -928,8 +961,8 @@ mummichog.PatAct <- mummichog.PatAct[order(mummichog.PatAct$number),1:10]
 mummichog.PatAct <- merge(mummichog.PatAct,save.plsresults.sigfeatures,by = "mz", all.x = TRUE)
 mummichog.PatAct <- mummichog.PatAct[order(mummichog.PatAct$number),c(1:7,15)]
 
-mummichog.cor <- read.table("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",sep = "\t",header = TRUE)
-mummichog.cor <- mummichog.cor[which(mummichog.cor$p.value == 0.004),]
+mummichog.cor <- read.table("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/mummichog_input_vip2fc0_2018-08-19.txt",sep = "\t",header = TRUE)
+mummichog.cor <- mummichog.cor[which(mummichog.cor$p.value == 0.04),]
 mummichog.cor$mz <- round(mummichog.cor$mz,4)
 mummichog.PatAct <- merge(mummichog.PatAct,mummichog.cor,by = "mz", all.x = TRUE)
 mummichog.PatAct <- mummichog.PatAct[order(mummichog.PatAct$number),c(1:8,11)]
@@ -942,12 +975,12 @@ for.kegg <- mummichog.PatAct[,c(2,10)]
 
 # add HILIC
 
-load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-05-31_vip2fc0.RData")
+load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/PANDA_output_PLSDA/Res_PLSDA_result_2018-08-19_vip2fc0.RData")
 save.plsresults.allfeatures$mz <- round(save.plsresults.allfeatures$mz,4)
 save.plsresults.sigfeatures$mz <- round(save.plsresults.sigfeatures$mz,4)
 
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/HILIC_mummichog_vip2fc0_0531/tsv")
-HILIC.mummichog.PatAct <- read.xlsx("mcg_pathwayanalysis_HILIC_mummichog_vip2fc0_0531.xlsx",sheetName = "Sheet1",header = TRUE)
+setwd("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/HILIC_mummichog_vip2fc0_0820_major/tsv")
+HILIC.mummichog.PatAct <- read.xlsx("mcg_pathwayanalysis_HILIC_mummichog_vip2fc0_0820.xlsx",sheetName = "Sheet1",header = TRUE)
 # HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[,c(5,1,2)]
 # colnames(HILIC.mummichog.PatAct) <- c("name","mz","id")
 colnames(HILIC.mummichog.PatAct) <- c("mz","id","match.form","mz_difference","name","pathway")
@@ -958,8 +991,8 @@ HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[order(HILIC.mummichog.PatAct$nu
 HILIC.mummichog.PatAct <- merge(HILIC.mummichog.PatAct,save.plsresults.sigfeatures,by = "mz", all.x = TRUE)
 HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[order(HILIC.mummichog.PatAct$number),c(1:7,15)]
 
-HILIC.mummichog.cor <- read.table("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/mummichog_input_vip2fc0_2018-05-31.txt",sep = "\t",header = TRUE)
-HILIC.mummichog.cor <- HILIC.mummichog.cor[which(HILIC.mummichog.cor$p.value == 0.004),]
+HILIC.mummichog.cor <- read.table("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Controls_ExpoUnexpo/HILIC_mummichog/mummichog_input_vip2fc0_2018-08-19.txt",sep = "\t",header = TRUE)
+HILIC.mummichog.cor <- HILIC.mummichog.cor[which(HILIC.mummichog.cor$p.value == 0.04),]
 HILIC.mummichog.cor$mz <- round(HILIC.mummichog.cor$mz,4)
 HILIC.mummichog.PatAct <- merge(HILIC.mummichog.PatAct,HILIC.mummichog.cor,by = "mz", all.x = TRUE)
 HILIC.mummichog.PatAct <- HILIC.mummichog.PatAct[order(HILIC.mummichog.PatAct$number),c(1:8,11)]
@@ -993,10 +1026,11 @@ pathway_Plotly(data = mummichog.PatAct, pathway_name = "Leukotriene metabolism")
 
 # Use pathview to draw KEGG pathways
 cmp.list <- mummichog.PatAct$foldchange
+cmp.list <- ifelse(cmp.list<=0,-1,1)
 names(cmp.list) <- mummichog.PatAct$id
 
-setwd("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Controls_ExpoUnexpo/C18_mummichog/C18_mummichog_vip2fc0_0531")
+setwd("C:/Users/QiYan/Dropbox/AIME/Results/Air pollution/Related Figures")
 pv.out <- pathview(cpd.data = cmp.list,
                    pathway.id = '01100', species = "hsa", keys.align = "y", kegg.native = TRUE, res = 1000, bins = 80,
                    plot.col.key = FALSE, new.signature = FALSE,
-                   low = list(gene = "blue", cpd = "green"), high = list(gene = "yellow", cpd ="red"))
+                   low = list(gene = "blue", cpd = "springgreen3"), high = list(gene = "yellow", cpd ="firebrick1"))
