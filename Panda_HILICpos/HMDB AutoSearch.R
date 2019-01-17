@@ -39,3 +39,6 @@ HILIClist <- cbind(HILIClist,HILIC_name)
 HILIClist$HILIC_name[which(HILIClist$HMDBID=="")] <- NA
 C18list <- cbind(C18list,C18_name)
 C18list$C18_name[which(C18list$HMDBID=="")] <- NA
+
+write.table(HILIClist,file = "C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/HILICpos_InHouse_Library.txt", sep = "\t", row.names = F,quote = F)
+write.table(C18list,file = "C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/C18neg_InHouse_Library.txt", sep = "\t", row.names = F,quote = F)
