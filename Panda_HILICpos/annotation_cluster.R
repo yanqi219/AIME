@@ -222,11 +222,15 @@ print(format(Sys.time(), "%a %b %d %X %Y"))
 # mz tolerance = 5ppm, time tolerance = 15s
 
 library(fuzzyjoin)
+library(xlsx)
 
 tolerance = 5
 
-HILIC_library <- read.table(file = "C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/IROA_input_file_hilicpos_vjune282018.txt", sep = "\t", header = T)
-C18_library <- read.table(file = "C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/IROA_input_file_c18neg_vjune282018.txt", sep = "\t", header = T)
+HILIC_library <- read.xlsx(file = "C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/IROA_confirmed_metabolites_hilicpos_c18neg_5min_voct312018B.xlsx", 1, header = T)
+C18_library <- read.xlsx(file = "C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/IROA_confirmed_metabolites_hilicpos_c18neg_5min_voct312018B.xlsx", 2, header = T)
+
+# HILIC_DPlib <- read.xlsx("C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/Confirmed metabolites Aug 2017_1229.xls",1)
+# C18_DPlib <- read.xlsx("C:/Users/QiYan/Dropbox/AIME/PNS_Ritz/Confirmed metabolites Aug 2017_1229.xls",2)
 
 load("C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_annotation_input.RData")
 after.prepro.linkid$delta_mz = (tolerance) * (after.prepro.linkid$mz/1e+06)
@@ -235,7 +239,7 @@ after.prepro.linkid$max_mz = after.prepro.linkid$mz + after.prepro.linkid$delta_
 
 HILIC_verify <- data.frame()
 for(i in 1:nrow(after.prepro.linkid)){
-  rownum <- which(HILIC_library$mz >= after.prepro.linkid[i,4] & HILIC_library$mz <= after.prepro.linkid[i,5] & abs(HILIC_library$time-after.prepro.linkid[i,2])<=15)
+  rownum <- which(HILIC_library$mz >= after.prepro.linkid[i,4] & HILIC_library$mz <= after.prepro.linkid[i,5])
   if (length(rownum)!=0){
     temp <- cbind(after.prepro.linkid[i,],HILIC_library[rownum,])
     HILIC_verify <- rbind(HILIC_verify, temp)
@@ -243,27 +247,38 @@ for(i in 1:nrow(after.prepro.linkid)){
   rm(temp)
 }
 
-HILIC_verify <- HILIC_verify[,c(1,2,6:10)]
-colnames(HILIC_verify) <- c("mz.x","time.x","mz.y","time.y","ID","KEGGID","HMDBID")
+HILIC_verify <- HILIC_verify[,c(1,2,13,14,6:10)]
+colnames(HILIC_verify) <- c("mz.x","time.x","mz.y","time.y","KEGGID","HMDBID","Name","SMILES","Fomula")
 
-# HILIC_verify <- difference_left_join(after.prepro.linkid, HILIC_library, by = "mz", max_dist = 0.005)
-# HILIC_verify <- HILIC_verify[-which(is.na(HILIC_verify$mz.y)),]
-# timeout <- which(abs(HILIC_verify$time.x - HILIC_verify$time.y)>=15)
-# HILIC_verify <- HILIC_verify[-timeout,]
+# HILIC_DPverify <- data.frame()
+# for(i in 1:nrow(after.prepro.linkid)){
+#   rownum <- which(as.numeric(as.character(HILIC_DPlib$Best.Adduct.Mass)) >= after.prepro.linkid[i,4] & as.numeric(as.character(HILIC_DPlib$Best.Adduct.Mass)) <= after.prepro.linkid[i,5] & abs(as.numeric(as.character(HILIC_DPlib$Retention.Time))-after.prepro.linkid[i,2])<=15)
+#   if (length(rownum)!=0){
+#     temp <- cbind(after.prepro.linkid[i,],HILIC_DPlib[rownum,])
+#     HILIC_DPverify <- rbind(HILIC_DPverify, temp)
+#   }
+#   rm(temp)
+# }
+# 
+# HILIC_DPverify <- HILIC_DPverify[,c(1,2,11,9,6,10)]
+# colnames(HILIC_DPverify) <- c("mz.x","time.x","mz.y","time.y","verified name","adduct form")
+# 
+# HILIC_mergedVerified <- merge(HILIC_verify, HILIC_DPverify, by = c("mz.x", "time.x"), all = T)
+# colnames(HILIC_mergedVerified) <- c("mz.x","time.x","mz.KU","time.KU","ID","KEGGID","HMDBID","mz.DP","time.DP","verified name","adduct form")
+
 write.table(HILIC_verify, file = "C:/Users/QiYan/Dropbox/AIME/Panda_HILICpos/HILIC_Annotation/HILIC_annotation_verified.txt", sep = "\t", row.names = F,quote = F)
 
+
+
 load("C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_annotation_input.RData")
-# C18_verify <- difference_left_join(after.prepro.linkid, C18_library, by = "mz", max_dist = 0.005)
-# C18_verify <- C18_verify[-which(is.na(C18_verify$mz.y)),]
-# timeout <- which(abs(C18_verify$time.x - C18_verify$time.y)>=15)
-# C18_verify <- C18_verify[-timeout,]
+
 after.prepro.linkid$delta_mz = (tolerance) * (after.prepro.linkid$mz/1e+06)
 after.prepro.linkid$min_mz = after.prepro.linkid$mz - after.prepro.linkid$delta_mz
 after.prepro.linkid$max_mz = after.prepro.linkid$mz + after.prepro.linkid$delta_mz
 
 C18_verify <- data.frame()
 for(i in 1:nrow(after.prepro.linkid)){
-  rownum <- which(C18_library$mz >= after.prepro.linkid[i,4] & C18_library$mz <= after.prepro.linkid[i,5] & abs(C18_library$time-after.prepro.linkid[i,2])<=15)
+  rownum <- which(C18_library$mz >= after.prepro.linkid[i,4] & C18_library$mz <= after.prepro.linkid[i,5])
   if (length(rownum)!=0){
     temp <- cbind(after.prepro.linkid[i,],C18_library[rownum,])
     C18_verify <- rbind(C18_verify, temp)
@@ -271,7 +286,23 @@ for(i in 1:nrow(after.prepro.linkid)){
   rm(temp)
 }
 
-C18_verify <- C18_verify[,c(1,2,6:10)]
-colnames(C18_verify) <- c("mz.x","time.x","mz.y","time.y","ID","KEGGID","HMDBID")
+C18_verify <- C18_verify[,c(1,2,13,14,6:10)]
+colnames(C18_verify) <- c("mz.x","time.x","mz.y","time.y","KEGGID","HMDBID","Name","SMILES","Fomula")
+
+# C18_DPverify <- data.frame()
+# for(i in 1:nrow(after.prepro.linkid)){
+#   rownum <- which(as.numeric(as.character(C18_DPlib$m.z)) >= after.prepro.linkid[i,4] & as.numeric(as.character(C18_DPlib$m.z)) <= after.prepro.linkid[i,5] & abs(as.numeric(as.character(C18_DPlib$Retention.Time..C18.))-after.prepro.linkid[i,2])<=15)
+#   if (length(rownum)!=0){
+#     temp <- cbind(after.prepro.linkid[i,],C18_DPlib[rownum,])
+#     C18_DPverify <- rbind(C18_DPverify, temp)
+#   }
+#   rm(temp)
+# }
+# 
+# C18_DPverify <- C18_DPverify[,c(1,2,11,9,6,10)]
+# colnames(C18_DPverify) <- c("mz.x","time.x","mz.y","time.y","verified name","adduct form")
+# 
+# C18_mergedVerified <- merge(C18_verify, C18_DPverify, by = c("mz.x", "time.x"), all = T)
+# colnames(C18_mergedVerified) <- c("mz.x","time.x","mz.KU","time.KU","ID","KEGGID","HMDBID","mz.DP","time.DP","verified name","adduct form")
 
 write.table(C18_verify, file = "C:/Users/QiYan/Dropbox/AIME/Panda_C18neg/C18_Annotation/C18_annotation_verified.txt", sep = "\t", row.names = F,quote = F)
